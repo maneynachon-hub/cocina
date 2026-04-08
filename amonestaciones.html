@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amonestaciones &mdash; Sistema Cocina</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0e0e0e;--bg2:#171717;--bg3:#202020;
+  --bo:rgba(255,255,255,0.07);--bo2:rgba(255,255,255,0.12);
+  --tx:#edeae4;--tx2:#888;--tx3:#444;
+  --gr:#1fa87a;--gr2:rgba(31,168,122,.15);--gr3:rgba(31,168,122,.08);
+  --rd:#e05555;--rd2:rgba(224,85,85,.15);
+  --ar:#F0A020;--ar2:rgba(240,160,32,.15);
+  --am:#d4a017;--am2:rgba(212,160,23,.15);
+  --r:12px;--rs:8px;--rxs:6px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;padding:20px;}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--bo);}
+.hdr h1{font-size:20px;font-weight:600;letter-spacing:-.4px;}
+.hdr p{font-size:13px;color:var(--tx2);margin-top:3px;}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:24px;}
+.stat{background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);padding:12px 14px;}
+.stat.rd{border-color:rgba(224,85,85,.3);}
+.stat.gr{border-color:rgba(31,168,122,.3);}
+.slbl{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.sval{font-size:22px;font-weight:700;font-family:monospace;}
+.ssub{font-size:11px;color:var(--tx2);margin-top:3px;}
+.secTitle{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;}
+.fineCard{background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;}
+.fineCard.pardoned{opacity:.55;}
+.fineCard.active{border-color:rgba(224,85,85,.25);}
+.fcTop{display:flex;align-items:center;gap:10px;}
+.fcName{font-size:14px;font-weight:600;flex:1;}
+.fcAmount{font-size:16px;font-weight:700;color:var(--rd);}
+.fcAmount.pardoned{color:var(--tx3);text-decoration:line-through;}
+.fcDate{font-size:11px;color:var(--tx2);margin-top:3px;}
+.fcDetail{font-size:12px;color:var(--tx3);margin-top:4px;line-height:1.5;}
+.fcBottom{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--bo);}
+.badge{font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600;}
+.badge.active{background:var(--rd2);color:var(--rd);}
+.badge.pardoned{background:var(--gr3);color:var(--gr);}
+.btnPardon{background:var(--am2);border:1px solid rgba(212,160,23,.3);border-radius:var(--rxs);color:var(--am);font-size:12px;font-weight:600;padding:5px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.btnPardon:hover{background:var(--am);color:#111;}
+.dateHdr{font-size:12px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 8px;}
+.dateHdr:first-child{margin-top:0;}
+.empty{text-align:center;padding:48px 20px;color:var(--tx3);}
+.empty .ico{font-size:36px;margin-bottom:10px;}
+.refreshBtn{background:var(--bg3);border:1px solid var(--bo2);border-radius:var(--rs);color:var(--tx2);font-size:13px;padding:7px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.nomina{background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);padding:16px;margin-bottom:20px;}
+.nominaRow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bo);font-size:13px;}
+.nominaRow:last-child{border-bottom:none;}
+.nominaName{flex:1;font-weight:500;}
+.nominaDeduct{color:var(--rd);font-weight:600;}
+.nominaDeduct.zero{color:var(--gr);}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <h1>&#128273; Amonestaciones del checklist</h1>
+    <p>Gesti&oacute;n de multas del Sistema de Cocina &mdash; Arepa &amp; Smash Lovers</p>
+  </div>
+  <button class="refreshBtn" onclick="init()">&#8635; Actualizar</button>
+</div>
+
+<div class="stats" id="statsPanel"></div>
+
+<div class="secTitle">Resumen de n&oacute;mina &mdash; mes actual</div>
+<div class="nomina" id="nominaPanel"></div>
+
+<div class="secTitle" id="finesTitle">Historial de amonestaciones</div>
+<div id="finesPanel"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// FINES FROM SISTEMA COCINA — with pardon support
+// ══════════════════════════════════════════════════════════════════
+
+function getCocinaFines(){
+  try{
+    var raw = localStorage.getItem("bio_fines");
+    if(!raw) return [];
+    var arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch(e){ return []; }
+}
+
+function getActiveFinesForEmp(empId, dateStr){
+  // Returns total fine amount for employee on given date (excluding pardoned)
+  return getCocinaFines()
+    .filter(function(f){
+      return f.empId===empId && f.date===dateStr && !f.pardoned;
+    })
+    .reduce(function(a,f){ return a + (f.amount||0); }, 0);
+}
+
+function pardonFineInReloj(empId, date){
+  try{
+    var fines = getCocinaFines();
+    fines = fines.map(function(f){
+      if(f.empId===empId && f.date===date) f.pardoned = true;
+      return f;
+    });
+    localStorage.setItem("bio_fines", JSON.stringify(fines));
+    renderFinesPanel();
+  } catch(e){ alert("Error al perdonar amonestacion."); }
+}
+
+function renderFinesPanel(){
+  var panel = document.getElementById("finesPanel");
+  if(!panel) return;
+  var fines = getCocinaFines();
+  if(!fines.length){
+    panel.innerHTML = '<div style="color:#888;font-size:13px;padding:10px 0">No hay amonestaciones registradas.</div>';
+    return;
+  }
+  // Group by date
+  var byDate = {};
+  fines.forEach(function(f){
+    if(!byDate[f.date]) byDate[f.date] = [];
+    byDate[f.date].push(f);
+  });
+  var html = '';
+  Object.keys(byDate).sort().reverse().forEach(function(date){
+    html += '<div style="margin-bottom:14px">'
+      + '<div style="font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'
+      + date + '</div>';
+    byDate[date].forEach(function(f){
+      var pardoned = !!f.pardoned;
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#1a1a1a;border:1px solid '
+        + (pardoned?'#333':'rgba(224,85,85,.3)') + ';border-radius:8px;margin-bottom:5px">'
+        + '<div style="flex:1">'
+        + '<div style="font-size:13px;font-weight:600;color:' + (pardoned?'#555':'#eee') + '">'
+        + f.empName
+        + (pardoned?' <span style="font-size:10px;color:#888">(Perdonada)</span>':'')
+        + '</div>'
+        + '<div style="font-size:11px;color:#666;margin-top:2px">' + (f.detail||f.reason||'') + '</div>'
+        + '</div>'
+        + '<div style="font-size:14px;font-weight:700;color:' + (pardoned?'#555':'#e05555') + ';'
+        + (pardoned?'text-decoration:line-through':'') + '">'
+        + 'RD$ ' + (f.amount||0)
+        + '</div>'
+        + (!pardoned
+          ? '<button onclick="pardonFineInReloj(' + f.empId + ',\'' + f.date + '\')" '
+            + 'style="background:rgba(212,160,23,.15);border:1px solid rgba(212,160,23,.3);border-radius:6px;'
+            + 'color:#d4a017;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap">Perdonar</button>'
+          : '<span style="font-size:11px;color:#2d7a4a;background:rgba(31,168,122,.1);padding:3px 8px;border-radius:6px">✓ Perdonada</span>'
+        )
+        + '</div>';
+    });
+    html += '</div>';
+  });
+  panel.innerHTML = html;
+}
+
+// Integrate fines into salary calculation
+function getDeductionsForEmp(empId, month, year){
+  // Returns total fine deductions for employee in given month/year
+  // Only non-pardoned fines
+  return getCocinaFines()
+    .filter(function(f){
+      if(f.empId !== empId || f.pardoned) return false;
+      var parts = f.date.split("/");
+      if(parts.length < 3) return false;
+      return parseInt(parts[1])===month && parseInt(parts[2])===year;
+    })
+    .reduce(function(a,f){ return a + (f.amount||0); }, 0);
+}
+
+
+function getEmps(){
+  try{
+    var raw=localStorage.getItem("sx_emps");
+    if(!raw) return [];
+    var arr=JSON.parse(raw);
+    return Array.isArray(arr)?arr:[];
+  } catch(e){ return []; }
+}
+
+function init(){
+  var fines = getCocinaFines();
+  var now = new Date();
+  var thisMonth = now.getMonth()+1;
+  var thisYear = now.getFullYear();
+  var emps = getEmps();
+
+  // ── Stats ──
+  var total = fines.filter(function(f){return !f.pardoned;}).reduce(function(a,f){return a+f.amount;},0);
+  var pardoned = fines.filter(function(f){return f.pardoned;}).reduce(function(a,f){return a+f.amount;},0);
+  var pending = fines.filter(function(f){return !f.pardoned;}).length;
+  var thisMonthTotal = fines
+    .filter(function(f){
+      if(f.pardoned) return false;
+      var p=f.date.split("/"); if(p.length<3) return false;
+      return parseInt(p[1])===thisMonth && parseInt(p[2])===thisYear;
+    })
+    .reduce(function(a,f){return a+f.amount;},0);
+
+  document.getElementById("statsPanel").innerHTML =
+    '<div class="stat rd"><div class="slbl">Pendientes activas</div><div class="sval" style="color:var(--rd)">'+pending+'</div><div class="ssub">multas</div></div>'
+    +'<div class="stat rd"><div class="slbl">A descontar hoy</div><div class="sval" style="color:var(--rd)">RD$ '+Math.round(total).toLocaleString()+'</div><div class="ssub">total pendiente</div></div>'
+    +'<div class="stat"><div class="slbl">Este mes</div><div class="sval" style="color:var(--ar)">RD$ '+Math.round(thisMonthTotal).toLocaleString()+'</div><div class="ssub">no perdonadas</div></div>'
+    +'<div class="stat gr"><div class="slbl">Perdonadas</div><div class="sval" style="color:var(--gr)">RD$ '+Math.round(pardoned).toLocaleString()+'</div><div class="ssub">total absuelto</div></div>';
+
+  // ── Nómina resumen (mes actual) ──
+  var nominaHtml = '';
+  if(emps.length){
+    emps.forEach(function(e){
+      var deduct = getDeductionsForEmp(e.id, thisMonth, thisYear);
+      nominaHtml += '<div class="nominaRow">'
+        +'<div class="nominaName">'+e.name+' <span style="font-size:11px;color:var(--tx3)">'+e.role+'</span></div>'
+        +'<div class="nominaDeduct'+(deduct===0?' zero':'')+'">'+
+          (deduct>0?'- RD$ '+deduct.toLocaleString():'Sin descuentos')+'</div>'
+        +'</div>';
+    });
+  } else {
+    nominaHtml = '<div style="font-size:13px;color:var(--tx3);padding:8px 0">No se encontraron empleados. Aseg&uacute;rate de abrir el sistema de cocina primero.</div>';
+  }
+  document.getElementById("nominaPanel").innerHTML = nominaHtml;
+
+  // ── Fines list ──
+  renderFinesPanel();
+}
+
+// Override renderFinesPanel with full version
+function renderFinesPanel(){
+  var panel = document.getElementById("finesPanel");
+  if(!panel) return;
+  var fines = getCocinaFines();
+
+  if(!fines.length){
+    panel.innerHTML = '<div class="empty"><div class="ico">&#9989;</div><p style="font-size:14px;color:var(--tx2)">No hay amonestaciones registradas.</p><small style="color:var(--tx3)">Las amonestaciones se generan autom&aacute;ticamente<br>cuando el checklist diario no se completa.</small></div>';
+    return;
+  }
+
+  // Group by date descending
+  var byDate = {};
+  fines.forEach(function(f){
+    if(!byDate[f.date]) byDate[f.date]=[];
+    byDate[f.date].push(f);
+  });
+
+  var html = '';
+  Object.keys(byDate).sort().reverse().forEach(function(date){
+    html += '<div class="dateHdr">'+date+'</div>';
+    byDate[date].forEach(function(f){
+      var p = !!f.pardoned;
+      html += '<div class="fineCard '+(p?'pardoned':'active')+'">'
+        +'<div class="fcTop">'
+        +'<div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--tx2);flex-shrink:0">'
+        +(f.empName||'?').substring(0,2).toUpperCase()
+        +'</div>'
+        +'<div style="flex:1">'
+        +'<div class="fcName">'+f.empName+'</div>'
+        +'<div class="fcDate">'+f.reason+'</div>'
+        +'</div>'
+        +'<div class="fcAmount'+(p?' pardoned':'')+'">RD$ '+(f.amount||0)+'</div>'
+        +'</div>'
+        +(f.detail?'<div class="fcDetail">Tareas: '+f.detail+'</div>':'')
+        +'<div class="fcBottom">'
+        +'<span class="badge '+(p?'pardoned':'active')+'">'+(p?'&#10003; Perdonada':'&#9888; Activa')+'</span>'
+        +(!p
+          ? '<button class="btnPardon" onclick="pardonAndRefresh('+f.empId+',\''+f.date+'\')">Perdonar amonestaci&oacute;n</button>'
+          : '<span style="font-size:11px;color:var(--tx3)">Excluida de n&oacute;mina</span>'
+        )
+        +'</div>'
+        +'</div>';
+    });
+  });
+  panel.innerHTML = html;
+}
+
+function pardonAndRefresh(empId, date){
+  pardonFineInReloj(empId, date);
+  init(); // refresh stats too
+}
+
+// Init on load
+init();
+// Auto-refresh every 30 seconds (in case sistema-cocina updates fines)
+setInterval(init, 30000);
+</script>
+</body>
+</html>
