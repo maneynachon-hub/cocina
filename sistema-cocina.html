@@ -849,7 +849,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "2.1.0";
+var APP_VERSION = "2.2.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -981,6 +981,11 @@ function loadAll(){
   ings  = LS.get(K_INGS,  DEF_INGS);
   recs  = LS.get(K_RECS,  DEF_RECS);
   tasks = LS.get(K_TASKS, DEF_TASKS);
+  // sups always from localStorage
+  var savedSups = LS.get(K_SUPS, []);
+  if(Array.isArray(savedSups) && savedSups.length) {
+    // already in localStorage
+  }
   // Ensure all arrays are valid
   if(!Array.isArray(emps))  emps  = DEF_EMPS;
   if(!Array.isArray(ings))  ings  = DEF_INGS;
@@ -2844,17 +2849,7 @@ function initFirebase(){
         LS.set(K_SUPS,arr);
       }
     });
-    // Eagerly load ings too
-    fbDb.ref(path('ings')).once('value').then(function(snap){
-      var data=snap.val();
-      if(data){
-        var arr=Array.isArray(data)?data:Object.values(data).filter(function(v){return v!==null;});
-        arr=arr.map(function(i){ if(i.supId) i.supId=parseInt(i.supId)||null; return i; });
-        if(!FB_LOCAL_UPDATES.ings||Date.now()>=FB_LOCAL_UPDATES.ings){
-          ings=arr; LS.set(K_INGS,arr); renderInv();
-        }
-      }
-    });
+    // ings loaded from localStorage only
   } catch(e){
     console.error("Firebase init error:", e);
     FB_READY=false;
@@ -2976,10 +2971,7 @@ function onFbUpdate(node, arr){
       emps=arr; LS.set(K_EMPS,arr); changed=true; fillSel();
       break;
     case 'ings':
-      if(G("ovIng")&&G("ovIng").classList.contains("on")) break;
-      if(FB_LOCAL_UPDATES.ings&&Date.now()<FB_LOCAL_UPDATES.ings) break;
-      arr=arr.map(function(i){ if(i.supId!=null) i.supId=parseInt(i.supId)||null; return i; });
-      ings=arr; LS.set(K_INGS,arr); changed=true;
+      // ings managed locally only — Firebase is write-only for ings
       break;
     case 'recs':
       recs=arr; LS.set(K_RECS,arr); changed=true;
@@ -2991,9 +2983,7 @@ function onFbUpdate(node, arr){
       LS.set(K_MOV,arr); changed=true;
       break;
     case 'sups':
-      // Normalize sup IDs to integers
-      arr=arr.map(function(s){ s.id=parseInt(s.id)||s.id; return s; });
-      LS.set(K_SUPS,arr); changed=true;
+      // sups managed locally only — Firebase write-only
       break;
     case 'act':
       LS.set(K_ACT,arr); changed=true;
