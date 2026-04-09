@@ -1414,9 +1414,10 @@ function deleteIng(id){
   if(!confirm("¿Eliminar "+ing.name+"? Se eliminarán también sus movimientos y foto.")) return;
   ings=ings.filter(function(i){return i.id!==id;});
   LS.set(K_INGS,ings); fbSyncIngs();
-  // Remove photo
+  // Remove photo from localStorage and Firebase
   LS.set(K_IPHOTO+id,"");
-  if(typeof fbDb!=="undefined"&&FB_READY) fbDb.ref("cocina/fotos/"+id).remove();
+  try{ localStorage.removeItem(K_IPHOTO+id); }catch(e){}
+  if(FB_READY) fbDb.ref(path('fotos/'+id)).remove();
   // Remove movements
   var movs=getMov().filter(function(m){return m.ingId!==id;});
   saveMov(movs);
@@ -1437,6 +1438,7 @@ function openAddIng(){
   G("iCat").value="Lacteos"; G("iBrand").value="both";
   fillSupSelect("iSupId", null);
   G("ingPP").innerHTML='<span style="font-size:26px">&#128247;</span><div class="photoHint">Toca para agregar foto</div>';
+  try{ G("ingPF").value=""; G("ingPFCard").value=""; }catch(e){}
   showErr("errIng",""); openOv("ovIng");
 }
 function openEditIng(id){
@@ -1458,9 +1460,11 @@ function doSaveIng(){
     if(ing){ ing.name=name; ing.unit=unit; ing.min=min; ing.cat=cat; ing.brand=brand; ing.price=price; ing.supId=supId; }
     if(ingPhotoData) setIPhoto(editIngId,ingPhotoData);
   } else {
-    var nid=nII++;
+    // Use timestamp-based ID to avoid reusing IDs of deleted ingredients
+    var nid = Date.now();
     ings.push({id:nid, name:name, cat:cat, unit:unit, brand:brand, min:min, price:price, supId:supId});
     if(ingPhotoData) setIPhoto(nid,ingPhotoData);
+    else { LS.set(K_IPHOTO+nid,""); } // explicitly clear any old photo for this slot
   }
   LS.set(K_INGS,ings); fbSyncIngs();
   // Re-check all ingredients against new minimums
@@ -2826,12 +2830,15 @@ function startListeners(){
     if(cur&&!cur.isAdmin) renderCL();
   });
 
-  // Listen to photos
+  // Listen to photos — only apply for existing ingredients
   fbDb.ref(path('fotos')).on('value', function(snap){
     var data=snap.val();
     if(!data) return;
+    var currentIngIds=ings.map(function(i){ return String(i.id); });
     Object.keys(data).forEach(function(ingId){
-      if(data[ingId]) LS.set(K_IPHOTO+ingId, data[ingId]);
+      if(currentIngIds.indexOf(ingId)>=0 && data[ingId]){
+        LS.set(K_IPHOTO+ingId, data[ingId]);
+      }
     });
     if(cur) renderInv();
   });
