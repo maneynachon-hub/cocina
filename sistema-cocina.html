@@ -1544,10 +1544,13 @@ function doSaveIng(){
     if(ingPhotoData) setIPhoto(nid,ingPhotoData);
     else { LS.set(K_IPHOTO+nid,""); } // explicitly clear any old photo for this slot
   }
-  LS.set(K_INGS,ings); FB_LOCAL_UPDATES.ings=Date.now(); fbSyncIngs();
-  // Re-check all ingredients against new minimums
+  LS.set(K_INGS,ings);
+  // Write to Firebase — listener won't overwrite because modal is still open
+  fbSyncIngs();
+  // Re-check all ingredients
   ings.forEach(function(i){ autoCartIfLow(i.id); });
-  closeOv("ovIng"); renderInv();
+  closeOv("ovIng");
+  renderInv();
 }
 
 // ── CART ───────────────────────────────────────────
@@ -2967,16 +2970,9 @@ function onFbUpdate(node, arr){
       emps=arr; LS.set(K_EMPS,arr); changed=true; fillSel();
       break;
     case 'ings':
-      arr=arr.map(function(i){ if(i.supId) i.supId=parseInt(i.supId)||null; return i; });
-      // If we had a local update recently, preserve local supId values
-      if(FB_LOCAL_UPDATES.ings&&Date.now()-FB_LOCAL_UPDATES.ings<10000){
-        var localIngs=LS.get(K_INGS,[]);
-        arr=arr.map(function(fi){
-          var local=localIngs.find(function(li){return li.id===fi.id;});
-          if(local&&local.supId!==undefined) fi.supId=local.supId;
-          return fi;
-        });
-      }
+      // Never overwrite if ingredient modal is open (user is editing)
+      if(G("ovIng")&&G("ovIng").classList.contains("on")) break;
+      arr=arr.map(function(i){ if(i.supId!=null) i.supId=parseInt(i.supId)||null; return i; });
       ings=arr; LS.set(K_INGS,arr); changed=true;
       break;
     case 'recs':
@@ -3022,10 +3018,9 @@ function fbSyncEmps(){
 }
 function fbSyncIngs(){
   if(!FB_READY) return;
-  FB_WRITE_LOCK.ings = Date.now()+5000;
-  fbDb.ref(path('ings')).set(ings).then(function(){
-    FB_WRITE_LOCK.ings=0;
-  }).catch(function(e){ console.error("fbSyncIngs error:",e); FB_WRITE_LOCK.ings=0; });
+  fbDb.ref(path('ings')).set(ings).catch(function(e){
+    console.error("fbSyncIngs error:",e);
+  });
 }
 function fbSyncRecs(){
   if(!FB_READY) return;
