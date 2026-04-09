@@ -525,6 +525,7 @@ input[type=file]{display:none;}
 
 
 
+
 <div id="sLogin" class="scr on">
   <div class="lcard">
     <div class="lLogos">
@@ -820,7 +821,12 @@ input[type=file]{display:none;}
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
 
 
 
@@ -1027,9 +1033,18 @@ function doLogin(){
 function startApp(){
   // Persist session
   LS.set("sx_session", cur);
-  // Initialize Firebase sync
-  if(typeof firebase!=="undefined"&&!FB_READY) initFirebase();
-  setTimeout(function(){ showFbStatus(FB_READY); }, 2000);
+  // Initialize Firebase sync — retry if SDK not loaded yet
+  function tryInitFb(attempts){
+    if(typeof firebase!=="undefined"){
+      if(!FB_READY) initFirebase();
+      setTimeout(function(){ showFbStatus(FB_READY); }, 500);
+    } else if(attempts>0){
+      setTimeout(function(){ tryInitFb(attempts-1); }, 500);
+    } else {
+      showFbStatus(false);
+    }
+  }
+  tryInitFb(10);
   G("sLogin").classList.remove("on"); G("sLogin").style.display="none";
   G("sApp").classList.add("on");
   G("userName").textContent=cur.name;
@@ -1252,8 +1267,7 @@ function doSaveTasks(){
 
 // ── INVENTORY ──────────────────────────────────────
 function renderInv(){
-  // Always reload ings and tasks fresh from localStorage
-  ings=LS.get(K_INGS, DEF_INGS);
+  // ings kept in sync by Firebase listener — no need to reload from localStorage
   // Show/hide brand filter based on employee brand access
   var empBrandAccess=cur.isAdmin?"both":(cur.brand||"both");
   var bfRow=G("invBF");
@@ -2833,26 +2847,29 @@ function startListeners(){
 
 function objToArr(obj){
   if(!obj) return [];
-  return Object.values(obj).filter(function(v){ return v!==null; });
+  if(Array.isArray(obj)) return obj.filter(function(v){ return v!==null; });
+  // Firebase stores arrays as {0:item, 1:item, ...} - sort by key
+  var keys = Object.keys(obj).sort(function(a,b){ return parseInt(a)-parseInt(b); });
+  return keys.map(function(k){ return obj[k]; }).filter(function(v){ return v!==null; });
 }
 
 function onFbUpdate(node, arr){
   var changed=false;
   switch(node){
     case 'emps':
-      if(JSON.stringify(emps)!==JSON.stringify(arr)){ emps=arr; LS.set(K_EMPS,arr); changed=true; fillSel(); }
+      emps=arr; LS.set(K_EMPS,arr); changed=true; fillSel();
       break;
     case 'ings':
-      if(JSON.stringify(ings)!==JSON.stringify(arr)){ ings=arr; LS.set(K_INGS,arr); changed=true; }
+      ings=arr; LS.set(K_INGS,arr); changed=true;
       break;
     case 'recs':
-      if(JSON.stringify(recs)!==JSON.stringify(arr)){ recs=arr; LS.set(K_RECS,arr); changed=true; }
+      recs=arr; LS.set(K_RECS,arr); changed=true;
       break;
     case 'tasks':
-      if(JSON.stringify(tasks)!==JSON.stringify(arr)){ tasks=arr.map(function(t){if(!t.assignedTo)t.assignedTo=[];return t;}); LS.set(K_TASKS,tasks); changed=true; }
+      tasks=arr.map(function(t){if(!t.assignedTo)t.assignedTo=[];return t;}); LS.set(K_TASKS,tasks); changed=true;
       break;
     case 'movs':
-      if(JSON.stringify(getMov())!==JSON.stringify(arr)){ LS.set(K_MOV,arr); changed=true; }
+      LS.set(K_MOV,arr); changed=true;
       break;
     case 'sups':
       LS.set(K_SUPS,arr); changed=true;
@@ -2864,7 +2881,7 @@ function onFbUpdate(node, arr){
       LS.set(K_CL_HIST,arr); changed=true;
       break;
   }
-  if(changed&&cur){
+  if(cur){
     var activeTab=document.querySelector('.tab.on');
     if(activeTab){
       var tabId=activeTab.id;
@@ -2872,6 +2889,7 @@ function onFbUpdate(node, arr){
       else if(tabId==='tADM') renderAdm();
       else if(tabId==='tSUP') renderSups();
       else if(tabId==='tREC') renderRec();
+      else if(tabId==='tCL') renderCL();
     }
   }
 }
@@ -2879,14 +2897,39 @@ function onFbUpdate(node, arr){
 // ── SYNC WRITE WRAPPERS ────────────────────────────────────────────
 // These wrap existing LS.set calls to also write to Firebase
 
-function fbSyncEmps(){ if(FB_READY) fbSet('emps', emps); }
-function fbSyncIngs(){ if(FB_READY) fbSet('ings', ings); }
-function fbSyncRecs(){ if(FB_READY) fbSet('recs', recs); }
-function fbSyncTasks(){ if(FB_READY) fbSet('tasks', tasks); }
-function fbSyncMov(){ if(FB_READY) fbSet('movs', getMov()); }
-function fbSyncSups(){ if(FB_READY) fbSet('sups', getSups()); }
-function fbSyncAct(){ if(FB_READY) fbSet('act', getAct()); }
-function fbSyncClHist(){ if(FB_READY) fbSet('clhist', getCLHist()); }
+function fbSyncEmps(){
+  if(!FB_READY) return;
+  fbDb.ref(path('emps')).set(emps).catch(function(e){ console.error("fbSyncEmps error:",e); });
+}
+function fbSyncIngs(){
+  if(!FB_READY) return;
+  // Write array directly — Firebase handles array storage
+  fbDb.ref(path('ings')).set(ings).catch(function(e){ console.error("fbSyncIngs error:",e); });
+}
+function fbSyncRecs(){
+  if(!FB_READY) return;
+  fbDb.ref(path('recs')).set(recs).catch(function(e){ console.error("fbSyncRecs error:",e); });
+}
+function fbSyncTasks(){
+  if(!FB_READY) return;
+  fbDb.ref(path('tasks')).set(tasks).catch(function(e){ console.error("fbSyncTasks error:",e); });
+}
+function fbSyncMov(){
+  if(!FB_READY) return;
+  fbDb.ref(path('movs')).set(getMov()).catch(function(e){ console.error("fbSyncMov error:",e); });
+}
+function fbSyncSups(){
+  if(!FB_READY) return;
+  fbDb.ref(path('sups')).set(getSups()).catch(function(e){ console.error("fbSyncSups error:",e); });
+}
+function fbSyncAct(){
+  if(!FB_READY) return;
+  fbDb.ref(path('act')).set(getAct()).catch(function(e){ console.error("fbSyncAct error:",e); });
+}
+function fbSyncClHist(){
+  if(!FB_READY) return;
+  fbDb.ref(path('clhist')).set(getCLHist()).catch(function(e){ console.error("fbSyncClHist error:",e); });
+}
 
 function fbSyncStock(ingId, val){
   if(FB_READY) fbDb.ref(path('stock/'+ingId)).set(val);
@@ -2905,9 +2948,11 @@ function fbSyncFines(){
 function showFbStatus(ok){
   var ind=document.getElementById('fbStatus');
   if(!ind) return;
-  ind.title=ok?'Conectado a Firebase':'Sin conexión — modo local';
+  ind.title=ok?'Conectado — sincronización en tiempo real':'Sin conexión — modo local';
   ind.style.background=ok?'var(--gr)':'var(--am)';
+  ind.style.boxShadow=ok?'0 0 4px var(--gr)':'none';
 }
+
 
 
 </script>
