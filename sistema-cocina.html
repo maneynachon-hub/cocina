@@ -1298,7 +1298,8 @@ function ingCardHtml(ing){
     else stHtml='<span class="stOk">OK</span>';
   }
   var bTag=ing.brand==="arepa"?'<span class="ingBTag tagA">Arepa</span>':ing.brand==="smash"?'<span class="ingBTag tagS">Smash</span>':'<span class="ingBTag tagB">Ambas</span>';
-  var editBtn=cur.isAdmin?('<button onclick="openEditIng('+ing.id+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:0 0 0 4px">&#9998;</button>'):"";
+  var editBtn=cur.isAdmin?('<button onclick="openEditIng('+ing.id+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:0 0 0 4px">&#9998;</button>'
+    +'<button onclick="deleteIng('+ing.id+')" style="background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px;padding:0 0 0 4px">&#128465;</button>'):"";
   var actionRow="";
   if(cur.isAdmin){
     actionRow='<div class="movBtnRow">'
@@ -1391,6 +1392,28 @@ function fillSupSelect(selId, curSupId){
     if(s.id===curSupId) o.selected=true;
     sel.appendChild(o);
   });
+}
+
+
+function deleteIng(id){
+  var ing=ings.find(function(i){return i.id===id;}); if(!ing) return;
+  if(!confirm("¿Eliminar "+ing.name+"? Se eliminarán también sus movimientos y foto.")) return;
+  ings=ings.filter(function(i){return i.id!==id;});
+  LS.set(K_INGS,ings); fbSyncIngs();
+  // Remove photo
+  LS.set(K_IPHOTO+id,"");
+  if(typeof fbDb!=="undefined"&&FB_READY) fbDb.ref("cocina/fotos/"+id).remove();
+  // Remove movements
+  var movs=getMov().filter(function(m){return m.ingId!==id;});
+  saveMov(movs);
+  // Remove from carts
+  emps.forEach(function(e){
+    var cart=getCart(e.id).filter(function(c){return c.ingId!==id;});
+    setCart(e.id,cart);
+  });
+  var adminCart=getCart(0).filter(function(c){return c.ingId!==id;});
+  setCart(0,adminCart);
+  renderInv();
 }
 
 function openAddIng(){
