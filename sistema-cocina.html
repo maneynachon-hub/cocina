@@ -849,7 +849,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "2.4.0";
+var APP_VERSION = "2.5.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -2756,7 +2756,8 @@ function openAddSup(){
 }
 
 function openEditSup(id){
-  var sup=getSups().find(function(s){return s.id===id;}); if(!sup) return;
+  id=parseInt(id);
+  var sup=getSups().find(function(s){return parseInt(s.id)===id;}); if(!sup) return;
   editSupId=id;
   G("supModalTitle").textContent="Editar suplidor";
   G("sName").value=sup.name||"";
@@ -2801,7 +2802,7 @@ function doSaveSup(){
   });
   var sups=getSups();
   if(editSupId!==null){
-    var sup=sups.find(function(s){return s.id===editSupId;});
+    var sup=sups.find(function(s){return parseInt(s.id)===parseInt(editSupId);});
     if(sup){sup.name=name;sup.phone=phone;sup.address=address;sup.notes=notes;sup.products=products;}
     editSupId=null;
   } else {
@@ -2814,8 +2815,9 @@ function doSaveSup(){
 
 function closeSupHist(){ closeOv("ovSupHist"); }
 function deleteSup(id){
+  id=parseInt(id);
   if(!confirm("¿Eliminar este suplidor?")) return;
-  var sups=getSups().filter(function(s){return s.id!==id;});
+  var sups=getSups().filter(function(s){return parseInt(s.id)!==id;});
   saveSups(sups);
   renderSups();
 }
