@@ -1457,8 +1457,19 @@ function fillSupSelect(selId, curSupId){
         var data=snap.val();
         if(data){
           var arr=Array.isArray(data)?data:Object.values(data).filter(function(v){return v!==null;});
-          LS.set(K_SUPS,arr);
-          fillSupSelect(selId,curSupId); // retry
+          var norm=arr.map(function(s){ s.id=parseInt(s.id)||s.id; return s; });
+          LS.set(K_SUPS,norm);
+          // Re-populate the select if it's still in DOM
+          var sel2=G(selId);
+          if(sel2&&document.getElementById('ovIng')&&document.getElementById('ovIng').classList.contains('on')){
+            sel2.innerHTML='<option value="">Sin suplidor asignado</option>';
+            norm.forEach(function(s){
+              var o=document.createElement("option");
+              o.value=s.id; o.textContent=s.name;
+              if(curSupId&&parseInt(s.id)===parseInt(curSupId)) o.selected=true;
+              sel2.appendChild(o);
+            });
+          }
         }
       });
     }
@@ -2813,6 +2824,24 @@ function initFirebase(){
     console.log("Firebase connected");
     startListeners();
     watchConnection();
+    // Eagerly load sups so ingredient modal works immediately
+    fbDb.ref(path('sups')).once('value').then(function(snap){
+      var data=snap.val();
+      if(data){
+        var arr=Array.isArray(data)?data:Object.values(data).filter(function(v){return v!==null;});
+        LS.set(K_SUPS,arr);
+      }
+    });
+    // Eagerly load ings too
+    fbDb.ref(path('ings')).once('value').then(function(snap){
+      var data=snap.val();
+      if(data){
+        var arr=Array.isArray(data)?data:Object.values(data).filter(function(v){return v!==null;});
+        arr=arr.map(function(i){ if(i.supId) i.supId=parseInt(i.supId)||null; return i; });
+        ings=arr; LS.set(K_INGS,arr);
+        renderInv();
+      }
+    });
   } catch(e){
     console.error("Firebase init error:", e);
     FB_READY=false;
