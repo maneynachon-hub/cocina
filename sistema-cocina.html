@@ -1448,12 +1448,28 @@ function compressImage(file, maxPx, quality, callback){
 
 function fillSupSelect(selId, curSupId){
   var sel=G(selId); if(!sel) return;
-  var sups=getSups();
+  // Always reload fresh from localStorage to get latest sups
+  var sups=LS.get(K_SUPS,[]);
+  if(!Array.isArray(sups)||!sups.length){
+    // Try Firebase directly if localStorage empty
+    if(FB_READY&&fbDb){
+      fbDb.ref(path('sups')).once('value').then(function(snap){
+        var data=snap.val();
+        if(data){
+          var arr=Array.isArray(data)?data:Object.values(data).filter(function(v){return v!==null;});
+          LS.set(K_SUPS,arr);
+          fillSupSelect(selId,curSupId); // retry
+        }
+      });
+    }
+    sel.innerHTML='<option value="">Sin suplidor asignado</option>';
+    return;
+  }
   sel.innerHTML='<option value="">Sin suplidor asignado</option>';
   sups.forEach(function(s){
     var o=document.createElement("option");
     o.value=s.id; o.textContent=s.name;
-    if(parseInt(s.id)===parseInt(curSupId)) o.selected=true;
+    if(curSupId&&parseInt(s.id)===parseInt(curSupId)) o.selected=true;
     sel.appendChild(o);
   });
 }
