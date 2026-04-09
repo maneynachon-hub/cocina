@@ -1381,7 +1381,7 @@ function ingCardHtml(ing){
   return '<div class="ingCard" id="ic_'+ing.id+'">'
     +'<div class="ingPhoto"'+(cur.isAdmin?' style="cursor:pointer" onclick="openIngPhotoCard('+ing.id+')"':'')+'>'+img+photoBtn+'</div>'
     +'<div class="ingBody">'
-    +'<div class="ingTop"><div><div class="ingName">'+ing.name+editBtn+'</div><div class="ingUnit">'+ing.unit+' &middot; min: '+ing.min+(ing.price?' &middot; RD$'+ing.price+'/'+ing.unit:'')+function(){if(!ing.supId)return "";var sp=getSups().find(function(xx){return xx.id===ing.supId;});return sp?' &middot; '+sp.name:"";}()+'</div></div>'+bTag+'</div>'
+    +'<div class="ingTop"><div><div class="ingName">'+ing.name+editBtn+'</div><div class="ingUnit">'+ing.unit+' &middot; min: '+ing.min+(ing.price?' &middot; RD$'+ing.price+'/'+ing.unit:'')+function(){if(!ing.supId)return "";var sid=parseInt(ing.supId);var sp=getSups().find(function(xx){return parseInt(xx.id)===sid;});return sp?' &middot; '+sp.name:"";}()+'</div></div>'+bTag+'</div>'
     +'<div class="stockRow"><span class="stockLbl">Stock actual</span>'
     +'<span class="stockCur">'+(sv!==""?sv:"&#8212;")+'</span>'
     +(stHtml||'<span style="min-width:56px"></span>')
@@ -1453,7 +1453,7 @@ function fillSupSelect(selId, curSupId){
   sups.forEach(function(s){
     var o=document.createElement("option");
     o.value=s.id; o.textContent=s.name;
-    if(s.id===curSupId) o.selected=true;
+    if(parseInt(s.id)===parseInt(curSupId)) o.selected=true;
     sel.appendChild(o);
   });
 }
@@ -1502,7 +1502,7 @@ function openEditIng(id){
 }
 function doSaveIng(){
   showErr("errIng","");
-  var name=G("iName").value.trim(), unit=G("iUnit").value.trim(), min=parseFloat(G("iMin").value), cat=G("iCat").value, brand=G("iBrand").value, price=parseFloat(G("iPrice").value)||0, supId=parseInt(G("iSupId").value)||null;
+  var name=G("iName").value.trim(), unit=G("iUnit").value.trim(), min=parseFloat(G("iMin").value), cat=G("iCat").value, brand=G("iBrand").value, price=parseFloat(G("iPrice").value)||0, supId=G("iSupId").value?parseInt(G("iSupId").value):null;
   if(!name||!unit){ showErr("errIng","Completa nombre y unidad."); return; }
   if(isNaN(min)) min=0;
   if(editIngId){
@@ -2918,6 +2918,8 @@ function onFbUpdate(node, arr){
       emps=arr; LS.set(K_EMPS,arr); changed=true; fillSel();
       break;
     case 'ings':
+      // Normalize supId to integer
+      arr=arr.map(function(i){ if(i.supId) i.supId=parseInt(i.supId)||null; return i; });
       ings=arr; LS.set(K_INGS,arr); changed=true;
       break;
     case 'recs':
@@ -2930,6 +2932,8 @@ function onFbUpdate(node, arr){
       LS.set(K_MOV,arr); changed=true;
       break;
     case 'sups':
+      // Normalize sup IDs to integers
+      arr=arr.map(function(s){ s.id=parseInt(s.id)||s.id; return s; });
       LS.set(K_SUPS,arr); changed=true;
       break;
     case 'act':
