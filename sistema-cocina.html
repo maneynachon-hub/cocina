@@ -1524,6 +1524,7 @@ function openEditIng(id){
   G("ingMT").textContent="Editar ingrediente";
   G("iName").value=ing.name; G("iUnit").value=ing.unit; G("iMin").value=ing.min;
   G("iCat").value=ing.cat; G("iBrand").value=ing.brand; G("iPrice").value=ing.price||"";
+  fillSupSelect("iSupId", ing.supId||null);
   G("ingPP").innerHTML=ingPhotoData?'<img src="'+ingPhotoData+'" alt="">':'<span style="font-size:26px">&#128247;</span><div class="photoHint">Toca para agregar foto</div>';
   showErr("errIng",""); openOv("ovIng");
 }
