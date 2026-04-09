@@ -849,7 +849,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "2.5.0";
+var APP_VERSION = "2.6.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -2570,13 +2570,12 @@ function syncIngSupToSup(ingId, newSupId){
   var changed = false;
   sups = sups.map(function(s){
     if(!s.products) s.products = [];
-    var hasIng = s.products.indexOf(ingId) >= 0;
+    var ingIdInt = parseInt(ingId);
+    var hasIng = s.products.some(function(p){ return parseInt(p)===ingIdInt; });
     if(parseInt(s.id) === parseInt(newSupId)){
-      // Add to this sup's products if not already there
-      if(!hasIng){ s.products.push(ingId); changed = true; }
+      if(!hasIng){ s.products.push(ingIdInt); changed = true; }
     } else {
-      // Remove from all other sups
-      if(hasIng){ s.products = s.products.filter(function(p){ return p !== ingId; }); changed = true; }
+      if(hasIng){ s.products = s.products.filter(function(p){ return parseInt(p)!==ingIdInt; }); changed = true; }
     }
     return s;
   });
@@ -2634,7 +2633,8 @@ function renderSups(){
     var ordersMonth=supMonthMovs.length;
     var freshIngs=LS.get(K_INGS,DEF_INGS);
     var supProds=(sup.products||[]).map(function(pid){
-      var ing=freshIngs.find(function(i){return i.id===pid;}); return ing?ing.name:"";
+      var pidInt=parseInt(pid);
+      var ing=freshIngs.find(function(i){return parseInt(i.id)===pidInt;}); return ing?ing.name:"";
     }).filter(Boolean);
 
     html+='<div style="background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);overflow:hidden">'
@@ -2780,7 +2780,7 @@ function renderSupProductPicker(selected){
     html+='<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">'+cat+'</div>'
       +'<div style="display:flex;flex-wrap:wrap;gap:5px">';
     cats[cat].forEach(function(ing){
-      var checked=selected&&selected.indexOf(ing.id)>=0;
+      var checked=selected&&selected.some(function(p){return parseInt(p)===parseInt(ing.id);});
       html+='<label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);background:var(--bg3);border:1px solid var(--bo2);border-radius:20px;padding:3px 10px;cursor:pointer">'
         +'<input type="checkbox" value="'+ing.id+'" '+(checked?"checked":"")+' style="accent-color:var(--ar);cursor:pointer"> '+ing.name+'</label>';
     });
