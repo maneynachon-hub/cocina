@@ -849,7 +849,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "2.6.0";
+var APP_VERSION = "3.1.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -1391,7 +1391,7 @@ function ingCardHtml(ing){
   return '<div class="ingCard" id="ic_'+ing.id+'">'
     +'<div class="ingPhoto"'+(cur.isAdmin?' style="cursor:pointer" onclick="openIngPhotoCard('+ing.id+')"':'')+'>'+img+photoBtn+'</div>'
     +'<div class="ingBody">'
-    +'<div class="ingTop"><div><div class="ingName">'+ing.name+editBtn+'</div><div class="ingUnit">'+ing.unit+' &middot; min: '+ing.min+(ing.price?' &middot; RD$'+ing.price+'/'+ing.unit:'')+function(){if(!ing.supId)return "";var sid=parseInt(ing.supId);var sp=getSups().find(function(xx){return parseInt(xx.id)===sid;});return sp?' &middot; '+sp.name:"";}()+'</div></div>'+bTag+'</div>'
+    +'<div class="ingTop"><div><div class="ingName">'+ing.name+editBtn+'</div><div class="ingUnit">'+ing.unit+' &middot; min: '+ing.min+(ing.price?' &middot; RD$'+ing.price+'/'+ing.unit:'')+function(){if(!ing.supId)return "";var sp=getSups().find(function(xx){return String(xx.id)===String(ing.supId);});return sp?' &middot; '+sp.name:"";}()+'</div></div>'+bTag+'</div>'
     +'<div class="stockRow"><span class="stockLbl">Stock actual</span>'
     +'<span class="stockCur">'+(sv!==""?sv:"&#8212;")+'</span>'
     +(stHtml||'<span style="min-width:56px"></span>')
@@ -1476,7 +1476,7 @@ function fillSupSelect(selId, curSupId){
             norm.forEach(function(s){
               var o=document.createElement("option");
               o.value=s.id; o.textContent=s.name;
-              if(curSupId&&parseInt(s.id)===parseInt(curSupId)) o.selected=true;
+              if(curSupId&&String(s.id)===String(curSupId)) o.selected=true;
               sel2.appendChild(o);
             });
           }
@@ -1490,7 +1490,7 @@ function fillSupSelect(selId, curSupId){
   sups.forEach(function(s){
     var o=document.createElement("option");
     o.value=s.id; o.textContent=s.name;
-    if(curSupId&&parseInt(s.id)===parseInt(curSupId)) o.selected=true;
+    if(curSupId&&String(s.id)===String(curSupId)) o.selected=true;
     sel.appendChild(o);
   });
 }
@@ -1540,17 +1540,17 @@ function openEditIng(id){
 }
 function doSaveIng(){
   showErr("errIng","");
-  var name=G("iName").value.trim(), unit=G("iUnit").value.trim(), min=parseFloat(G("iMin").value), cat=G("iCat").value, brand=G("iBrand").value, price=parseFloat(G("iPrice").value)||0, supId=G("iSupId").value?parseInt(G("iSupId").value):null;
+  var name=G("iName").value.trim(), unit=G("iUnit").value.trim(), min=parseFloat(G("iMin").value), cat=G("iCat").value, brand=G("iBrand").value, price=parseFloat(G("iPrice").value)||0, supId=G("iSupId").value?String(G("iSupId").value):null;
   if(!name||!unit){ showErr("errIng","Completa nombre y unidad."); return; }
   if(isNaN(min)) min=0;
   if(editIngId){
     var ing=ings.find(function(i){ return i.id===editIngId; });
-    if(ing){ ing.name=name; ing.unit=unit; ing.min=min; ing.cat=cat; ing.brand=brand; ing.price=price; ing.supId=supId; }
+    if(ing){ ing.name=name; ing.unit=unit; ing.min=min; ing.cat=cat; ing.brand=brand; ing.price=price; ing.supId=supId?String(supId):null; }
     if(ingPhotoData) setIPhoto(editIngId,ingPhotoData);
   } else {
     // Use timestamp-based ID to avoid reusing IDs of deleted ingredients
     var nid = Date.now();
-    ings.push({id:nid, name:name, cat:cat, unit:unit, brand:brand, min:min, price:price, supId:supId});
+    ings.push({id:nid, name:name, cat:cat, unit:unit, brand:brand, min:min, price:price, supId:supId?String(supId):null});
     if(ingPhotoData) setIPhoto(nid,ingPhotoData);
     else { LS.set(K_IPHOTO+nid,""); } // explicitly clear any old photo for this slot
   }
@@ -2558,9 +2558,26 @@ var DEF_SUPS = [];
 var nSI = 1;
 var editSupId = null;
 
-function getSups(){ var s=LS.get(K_SUPS,[]); return Array.isArray(s)?s:[]; }
-function saveSups(a){ LS.set(K_SUPS,a); fbSyncSups(); }
-function initSupId(){ var s=getSups(); nSI=s.reduce(function(a,x){return Math.max(a,x.id);},0)+1; }
+function getSups(){
+  var s=LS.get(K_SUPS,[]); 
+  if(!Array.isArray(s)) return [];
+  return s.map(function(sup){
+    sup.id = String(sup.id);
+    sup.products = (sup.products||[]).map(function(p){ return String(p); });
+    return sup;
+  });
+}
+function saveSups(a){
+  // Normalize: all IDs to string, all product IDs to string
+  a = (Array.isArray(a)?a:[]).map(function(s){
+    s.id = String(s.id);
+    s.products = (s.products||[]).map(function(p){ return String(p); });
+    return s;
+  });
+  LS.set(K_SUPS,a);
+  fbSyncSups();
+}
+function initSupId(){ var s=getSups(); nSI=s.reduce(function(a,x){var n=parseInt(x.id)||0; return n>a?n:a;},0)+1; }
 
 // ── RENDER SUPPLIERS TAB ──────────────────────────────────────────
 
@@ -2570,12 +2587,12 @@ function syncIngSupToSup(ingId, newSupId){
   var changed = false;
   sups = sups.map(function(s){
     if(!s.products) s.products = [];
-    var ingIdInt = parseInt(ingId);
-    var hasIng = s.products.some(function(p){ return parseInt(p)===ingIdInt; });
-    if(parseInt(s.id) === parseInt(newSupId)){
-      if(!hasIng){ s.products.push(ingIdInt); changed = true; }
+    var ingIdStr = String(ingId);
+    var hasIng = s.products.some(function(p){ return String(p)===ingIdStr; });
+    if(String(s.id) === String(newSupId)){
+      if(!hasIng){ s.products.push(ingIdStr); changed = true; }
     } else {
-      if(hasIng){ s.products = s.products.filter(function(p){ return parseInt(p)!==ingIdInt; }); changed = true; }
+      if(hasIng){ s.products = s.products.filter(function(p){ return String(p)!==ingIdStr; }); changed = true; }
     }
     return s;
   });
@@ -2633,8 +2650,7 @@ function renderSups(){
     var ordersMonth=supMonthMovs.length;
     var freshIngs=LS.get(K_INGS,DEF_INGS);
     var supProds=(sup.products||[]).map(function(pid){
-      var pidInt=parseInt(pid);
-      var ing=freshIngs.find(function(i){return parseInt(i.id)===pidInt;}); return ing?ing.name:"";
+      var ing=freshIngs.find(function(i){return String(i.id)===String(pid);}); return ing?ing.name:"";
     }).filter(Boolean);
 
     html+='<div style="background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);overflow:hidden">'
@@ -2668,8 +2684,7 @@ function renderSups(){
 
 // ── SUPPLIER HISTORY MODAL ────────────────────────────────────────
 function showSupHistory(supId){
-  supId=parseInt(supId);
-  var sup=getSups().find(function(s){return parseInt(s.id)===supId;}); if(!sup) return;
+  var sup=getSups().find(function(s){return String(s.id)===String(supId);}); if(!sup) return;
   var movs=getMov().filter(function(m){
     return m.type==="in"&&m.cost>0&&sup.products&&sup.products.indexOf(m.ingId)>=0;
   });
@@ -2756,8 +2771,7 @@ function openAddSup(){
 }
 
 function openEditSup(id){
-  id=parseInt(id);
-  var sup=getSups().find(function(s){return parseInt(s.id)===id;}); if(!sup) return;
+  var sup=getSups().find(function(s){return String(s.id)===String(id);}); if(!sup) return;
   editSupId=id;
   G("supModalTitle").textContent="Editar suplidor";
   G("sName").value=sup.name||"";
@@ -2780,7 +2794,7 @@ function renderSupProductPicker(selected){
     html+='<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">'+cat+'</div>'
       +'<div style="display:flex;flex-wrap:wrap;gap:5px">';
     cats[cat].forEach(function(ing){
-      var checked=selected&&selected.some(function(p){return parseInt(p)===parseInt(ing.id);});
+      var checked=selected&&selected.some(function(p){return String(p)===String(ing.id);});
       html+='<label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);background:var(--bg3);border:1px solid var(--bo2);border-radius:20px;padding:3px 10px;cursor:pointer">'
         +'<input type="checkbox" value="'+ing.id+'" '+(checked?"checked":"")+' style="accent-color:var(--ar);cursor:pointer"> '+ing.name+'</label>';
     });
@@ -2802,11 +2816,11 @@ function doSaveSup(){
   });
   var sups=getSups();
   if(editSupId!==null){
-    var sup=sups.find(function(s){return parseInt(s.id)===parseInt(editSupId);});
+    var sup=sups.find(function(s){return String(s.id)===String(editSupId);});
     if(sup){sup.name=name;sup.phone=phone;sup.address=address;sup.notes=notes;sup.products=products;}
     editSupId=null;
   } else {
-    sups.push({id:nSI++,name:name,phone:phone,address:address,notes:notes,products:products});
+    sups.push({id:String(Date.now()),name:name,phone:phone,address:address,notes:notes,products:products});
   }
   saveSups(sups);
   closeOv("ovSup");
@@ -2815,9 +2829,8 @@ function doSaveSup(){
 
 function closeSupHist(){ closeOv("ovSupHist"); }
 function deleteSup(id){
-  id=parseInt(id);
   if(!confirm("¿Eliminar este suplidor?")) return;
-  var sups=getSups().filter(function(s){return parseInt(s.id)!==id;});
+  var sups=getSups().filter(function(s){return String(s.id)!==String(id);});
   saveSups(sups);
   renderSups();
 }
@@ -3021,7 +3034,7 @@ function onFbUpdate(node, arr){
       break;
     case 'sups':
       if(!Array.isArray(arr)||!arr.length) break;
-      arr=arr.map(function(s){ s.id=parseInt(s.id)||s.id; return s; });
+      arr=arr.map(function(s){ s.id=String(s.id); s.products=(s.products||[]).map(function(p){return String(p);}); return s; });
       LS.set(K_SUPS,arr);
       break;
     case 'act':
