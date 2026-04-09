@@ -2574,7 +2574,7 @@ function renderSups(){
   var totalMonth=monthMovs.reduce(function(a,m){return a+m.cost;},0);
   var totalAll=movs.reduce(function(a,m){return a+m.cost;},0);
   var supWithMost=null, supMax=0;
-  sups.forEach(function(sup,_si){
+  sups.forEach(function(sup){
     var supMovs=movs.filter(function(m){return sup.products&&sup.products.indexOf(m.ingId)>=0;});
     var total=supMovs.reduce(function(a,m){return a+m.cost;},0);
     if(total>supMax){supMax=total;supWithMost=sup;}
@@ -2593,7 +2593,7 @@ function renderSups(){
 
   // ── SUPPLIER CARDS ──
   html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">';
-  sups.forEach(function(sup){
+  sups.forEach(function(sup,_si){
     var supMovs=movs.filter(function(m){return sup.products&&sup.products.indexOf(m.ingId)>=0;});
     var supMonthMovs=supMovs.filter(function(m){
       var parts=m.date.split("/"); if(parts.length<3) return false;
