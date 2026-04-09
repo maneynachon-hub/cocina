@@ -842,6 +842,11 @@ input[type=file]{display:none;}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+var _supList=[];
+function supHist(i){ if(_supList[i]) showSupHistory(_supList[i].id); }
+function supEdit(i){ if(_supList[i]) openEditSup(_supList[i].id); }
+function supDel(i){ if(_supList[i]) deleteSup(_supList[i].id); }
+
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
 var APP_VERSION = "2.0.4";
@@ -1545,7 +1550,7 @@ function doSaveIng(){
     else { LS.set(K_IPHOTO+nid,""); } // explicitly clear any old photo for this slot
   }
   LS.set(K_INGS,ings);
-  // Write to Firebase — listener won't overwrite because modal is still open
+  FB_LOCAL_UPDATES.ings=Date.now()+10000;
   fbSyncIngs();
   // Re-check all ingredients
   ings.forEach(function(i){ autoCartIfLow(i.id); });
@@ -2554,6 +2559,7 @@ function initSupId(){ var s=getSups(); nSI=s.reduce(function(a,x){return Math.ma
 function renderSups(){
   if(!cur.isAdmin){ G("supView").innerHTML='<div class="emptyState"><div class="ei">&#128683;</div><p>Acceso restringido.</p></div>'; return; }
   var sups=getSups();
+  _supList=sups.slice();
   var html='<div class="pgHdr"><div><h2>Suplidores</h2><p>Gestiona proveedores y consulta estadísticas de compra</p></div>'
     +'<button class="btnAct" onclick="openAddSup()">+ Nuevo suplidor</button></div>';
 
@@ -2568,7 +2574,7 @@ function renderSups(){
   var totalMonth=monthMovs.reduce(function(a,m){return a+m.cost;},0);
   var totalAll=movs.reduce(function(a,m){return a+m.cost;},0);
   var supWithMost=null, supMax=0;
-  sups.forEach(function(sup){
+  sups.forEach(function(sup,_si){
     var supMovs=movs.filter(function(m){return sup.products&&sup.products.indexOf(m.ingId)>=0;});
     var total=supMovs.reduce(function(a,m){return a+m.cost;},0);
     if(total>supMax){supMax=total;supWithMost=sup;}
@@ -2612,8 +2618,8 @@ function renderSups(){
       +(sup.notes?'<div style="font-size:12px;color:var(--tx3);margin-top:2px;font-style:italic">'+sup.notes+'</div>':'')
       +'</div>'
       +'<div style="display:flex;gap:6px">'
-      +'<button onclick="openEditSup('+sup.id+')" style="background:var(--bg3);border:1px solid var(--bo2);border-radius:var(--rxs);color:var(--tx2);font-size:12px;padding:5px 9px;cursor:pointer;font-family:inherit">&#9998;</button>'
-      +'<button onclick="deleteSup('+sup.id+')" style="background:var(--rd2);border:1px solid rgba(224,85,85,.3);border-radius:var(--rxs);color:var(--rd);font-size:12px;padding:5px 9px;cursor:pointer;font-family:inherit">&#215;</button>'
+      +'<button onclick="supEdit('+_si+')" style="background:var(--bg3);border:1px solid var(--bo2);border-radius:var(--rxs);color:var(--tx2);font-size:12px;padding:5px 9px;cursor:pointer;font-family:inherit">&#9998;</button>'
+      +'<button onclick="supDel('+_si+')" style="background:var(--rd2);border:1px solid rgba(224,85,85,.3);border-radius:var(--rxs);color:var(--rd);font-size:12px;padding:5px 9px;cursor:pointer;font-family:inherit">&#215;</button>'
       +'</div></div></div>'
       // Stats row
       +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--bo)">'
@@ -2624,7 +2630,7 @@ function renderSups(){
       // Products
       +(supProds.length?'<div style="padding:10px 16px;border-bottom:1px solid var(--bo)"><div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Productos que provee</div><div style="display:flex;flex-wrap:wrap;gap:5px">'+supProds.map(function(p){return'<span style="font-size:11px;background:var(--bg3);color:var(--tx2);padding:2px 8px;border-radius:10px">'+p+'</span>';}).join("")+'</div></div>':'')
       // Monthly breakdown button
-      +'<div style="padding:10px 16px"><button onclick="showSupHistory('+sup.id+')" style="width:100%;padding:7px;background:var(--bg3);border:1px solid var(--bo2);border-radius:var(--rxs);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit">&#128202; Ver historial mensual</button></div>'
+      +'<div style="padding:10px 16px"><button onclick="supHist('+_si+')" style="width:100%;padding:7px;background:var(--bg3);border:1px solid var(--bo2);border-radius:var(--rxs);color:var(--tx2);font-size:12px;cursor:pointer;font-family:inherit">&#128202; Ver historial mensual</button></div>'
       +'</div>';
   });
   html+='</div>';
@@ -2970,8 +2976,8 @@ function onFbUpdate(node, arr){
       emps=arr; LS.set(K_EMPS,arr); changed=true; fillSel();
       break;
     case 'ings':
-      // Never overwrite if ingredient modal is open (user is editing)
       if(G("ovIng")&&G("ovIng").classList.contains("on")) break;
+      if(FB_LOCAL_UPDATES.ings&&Date.now()<FB_LOCAL_UPDATES.ings) break;
       arr=arr.map(function(i){ if(i.supId!=null) i.supId=parseInt(i.supId)||null; return i; });
       ings=arr; LS.set(K_INGS,arr); changed=true;
       break;
