@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -526,6 +529,7 @@ input[type=file]{display:none;}
 
 
 
+
 <div id="sLogin" class="scr on">
   <div class="lcard">
     <div class="lLogos">
@@ -825,7 +829,53 @@ input[type=file]{display:none;}
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
+// ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
+var APP_VERSION = "2.0.4";
+(function(){
+  // Unregister any service workers that might cache old versions
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(reg){ reg.unregister(); });
+    });
+  }
+  // Check version stored — if different, clear app cache and reload once
+  var storedVer = localStorage.getItem("sx_app_version");
+  if(storedVer && storedVer !== APP_VERSION){
+    // New version detected — clear only app cache keys (not user data)
+    var keysToKeep = ['sx_emps','sx_ings','sx_recs','sx_tasks','sx_mov',
+      'sx_sups','sx_act','sx_clhist','sx_lastreset','bio_fines','sx_session',
+      'sx_admin_pass'];
+    // Also keep cart, checklist, stock, photo keys
+    var keepPrefixes = ['sx_ca_','sx_cl_','sx_sharedstock_','sx_ip_','sx_st_'];
+    Object.keys(localStorage).forEach(function(k){
+      if(keysToKeep.indexOf(k) >= 0) return;
+      if(keepPrefixes.some(function(p){ return k.startsWith(p); })) return;
+      // Remove unknown/cache keys
+      localStorage.removeItem(k);
+    });
+    localStorage.setItem("sx_app_version", APP_VERSION);
+    // Force reload from server (bypass cache)
+    window.location.reload(true);
+    return;
+  }
+  localStorage.setItem("sx_app_version", APP_VERSION);
+})();
+
+
 
 
 
@@ -2746,6 +2796,7 @@ function initFirebase(){
     FB_READY=true;
     console.log("Firebase connected");
     startListeners();
+    watchConnection();
   } catch(e){
     console.error("Firebase init error:", e);
     FB_READY=false;
@@ -2961,6 +3012,21 @@ function showFbStatus(ok){
 }
 
 
+
+
+// ── RECONNECT HANDLER ─────────────────────────────────────────────
+function watchConnection(){
+  if(!FB_READY||!fbDb) return;
+  fbDb.ref('.info/connected').on('value', function(snap){
+    var connected = snap.val();
+    showFbStatus(connected);
+    if(connected && cur){
+      // Re-render current tab on reconnect
+      var activeTab=document.querySelector('.tab.on');
+      if(activeTab) switchTab(activeTab.id);
+    }
+  });
+}
 
 </script>
 <script>
