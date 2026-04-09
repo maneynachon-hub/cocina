@@ -2805,6 +2805,7 @@ var FB_CONFIG = {
 };
 
 var fbApp=null, fbDb=null;
+var FB_WRITE_LOCK={};
 var FB_READY=false;
 var FB_LISTENERS={};
 
@@ -2964,7 +2965,7 @@ function onFbUpdate(node, arr){
       emps=arr; LS.set(K_EMPS,arr); changed=true; fillSel();
       break;
     case 'ings':
-      // Normalize supId to integer
+      if(FB_WRITE_LOCK.ings&&Date.now()<FB_WRITE_LOCK.ings) break;
       arr=arr.map(function(i){ if(i.supId) i.supId=parseInt(i.supId)||null; return i; });
       ings=arr; LS.set(K_INGS,arr); changed=true;
       break;
@@ -3011,8 +3012,10 @@ function fbSyncEmps(){
 }
 function fbSyncIngs(){
   if(!FB_READY) return;
-  // Write array directly — Firebase handles array storage
-  fbDb.ref(path('ings')).set(ings).catch(function(e){ console.error("fbSyncIngs error:",e); });
+  FB_WRITE_LOCK.ings = Date.now()+5000;
+  fbDb.ref(path('ings')).set(ings).then(function(){
+    FB_WRITE_LOCK.ings=0;
+  }).catch(function(e){ console.error("fbSyncIngs error:",e); FB_WRITE_LOCK.ings=0; });
 }
 function fbSyncRecs(){
   if(!FB_READY) return;
