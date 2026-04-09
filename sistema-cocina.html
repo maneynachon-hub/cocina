@@ -1544,7 +1544,7 @@ function doSaveIng(){
     if(ingPhotoData) setIPhoto(nid,ingPhotoData);
     else { LS.set(K_IPHOTO+nid,""); } // explicitly clear any old photo for this slot
   }
-  LS.set(K_INGS,ings); fbSyncIngs();
+  LS.set(K_INGS,ings); FB_LOCAL_UPDATES.ings=Date.now(); fbSyncIngs();
   // Re-check all ingredients against new minimums
   ings.forEach(function(i){ autoCartIfLow(i.id); });
   closeOv("ovIng"); renderInv();
@@ -2630,7 +2630,8 @@ function renderSups(){
 
 // ── SUPPLIER HISTORY MODAL ────────────────────────────────────────
 function showSupHistory(supId){
-  var sup=getSups().find(function(s){return s.id===supId;}); if(!sup) return;
+  supId=parseInt(supId);
+  var sup=getSups().find(function(s){return parseInt(s.id)===supId;}); if(!sup) return;
   var movs=getMov().filter(function(m){
     return m.type==="in"&&m.cost>0&&sup.products&&sup.products.indexOf(m.ingId)>=0;
   });
@@ -2806,6 +2807,7 @@ var FB_CONFIG = {
 
 var fbApp=null, fbDb=null;
 var FB_WRITE_LOCK={};
+var FB_LOCAL_UPDATES={}; // tracks locally updated fields
 var FB_READY=false;
 var FB_LISTENERS={};
 
@@ -2965,8 +2967,16 @@ function onFbUpdate(node, arr){
       emps=arr; LS.set(K_EMPS,arr); changed=true; fillSel();
       break;
     case 'ings':
-      if(FB_WRITE_LOCK.ings&&Date.now()<FB_WRITE_LOCK.ings) break;
       arr=arr.map(function(i){ if(i.supId) i.supId=parseInt(i.supId)||null; return i; });
+      // If we had a local update recently, preserve local supId values
+      if(FB_LOCAL_UPDATES.ings&&Date.now()-FB_LOCAL_UPDATES.ings<10000){
+        var localIngs=LS.get(K_INGS,[]);
+        arr=arr.map(function(fi){
+          var local=localIngs.find(function(li){return li.id===fi.id;});
+          if(local&&local.supId!==undefined) fi.supId=local.supId;
+          return fi;
+        });
+      }
       ings=arr; LS.set(K_INGS,arr); changed=true;
       break;
     case 'recs':
