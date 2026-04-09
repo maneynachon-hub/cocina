@@ -849,7 +849,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "2.3.0";
+var APP_VERSION = "2.4.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -2871,10 +2871,20 @@ function initFirebase(){
       var data=snap.val();
       if(data){
         var arr=Array.isArray(data)?data:Object.values(data).filter(function(v){return v!==null;});
+        arr=arr.map(function(s){ s.id=parseInt(s.id)||s.id; return s; });
         LS.set(K_SUPS,arr);
       }
     });
-    // ings loaded from localStorage only
+    // Load ings from Firebase on connect
+    fbDb.ref(path('ings')).once('value').then(function(snap){
+      var data=snap.val();
+      if(data&&!FB_LOCAL_UPDATES.ings){
+        var arr=Array.isArray(data)?data:Object.values(data).filter(function(v){return v!==null;});
+        arr=arr.map(function(i){ if(i.supId!=null) i.supId=parseInt(i.supId)||null; return i; });
+        ings=arr; LS.set(K_INGS,arr);
+        if(cur) renderInv();
+      }
+    });
   } catch(e){
     console.error("Firebase init error:", e);
     FB_READY=false;
@@ -3008,7 +3018,9 @@ function onFbUpdate(node, arr){
       LS.set(K_MOV,arr); changed=true;
       break;
     case 'sups':
-      // sups managed locally only — Firebase write-only
+      if(!Array.isArray(arr)||!arr.length) break;
+      arr=arr.map(function(s){ s.id=parseInt(s.id)||s.id; return s; });
+      LS.set(K_SUPS,arr);
       break;
     case 'act':
       LS.set(K_ACT,arr); changed=true;
