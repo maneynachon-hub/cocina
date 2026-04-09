@@ -849,7 +849,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "2.2.0";
+var APP_VERSION = "2.3.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -1557,6 +1557,8 @@ function doSaveIng(){
   LS.set(K_INGS,ings);
   FB_LOCAL_UPDATES.ings=Date.now()+10000;
   fbSyncIngs();
+  // Sync supId back to sup.products
+  syncIngSupToSup(editIngId||ings[ings.length-1].id, supId);
   // Re-check all ingredients
   ings.forEach(function(i){ autoCartIfLow(i.id); });
   closeOv("ovIng");
@@ -2561,6 +2563,29 @@ function saveSups(a){ LS.set(K_SUPS,a); fbSyncSups(); }
 function initSupId(){ var s=getSups(); nSI=s.reduce(function(a,x){return Math.max(a,x.id);},0)+1; }
 
 // ── RENDER SUPPLIERS TAB ──────────────────────────────────────────
+
+function syncIngSupToSup(ingId, newSupId){
+  // When an ingredient's supId changes, update the sup.products arrays
+  var sups = getSups();
+  var changed = false;
+  sups = sups.map(function(s){
+    if(!s.products) s.products = [];
+    var hasIng = s.products.indexOf(ingId) >= 0;
+    if(parseInt(s.id) === parseInt(newSupId)){
+      // Add to this sup's products if not already there
+      if(!hasIng){ s.products.push(ingId); changed = true; }
+    } else {
+      // Remove from all other sups
+      if(hasIng){ s.products = s.products.filter(function(p){ return p !== ingId; }); changed = true; }
+    }
+    return s;
+  });
+  if(changed){
+    LS.set(K_SUPS, sups);
+    fbSyncSups();
+  }
+}
+
 function renderSups(){
   if(!cur.isAdmin){ G("supView").innerHTML='<div class="emptyState"><div class="ei">&#128683;</div><p>Acceso restringido.</p></div>'; return; }
   var sups=getSups();
