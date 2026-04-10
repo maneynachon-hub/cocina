@@ -8,7 +8,6 @@
 <meta http-equiv="Expires" content="0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Sistema Cocina &mdash; Arepa &amp; Smash Lovers</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap');
@@ -514,9 +513,29 @@ input[type=file]{display:none;}
 .cartBadge{ display:inline-flex; align-items:center; justify-content:center; background:var(--rd); color:#fff; font-size:10px; font-weight:700; width:15px; height:15px; border-radius:50%; margin-left:2px; vertical-align:middle; }
 
 .gr3{ background: var(--gr3); }
+
+/* ── GAS PROPANO ── */
+.gasWidget{background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);padding:16px 18px;margin-bottom:20px;}
+.gasTitle{font-size:13px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.gasBarWrap{position:relative;height:32px;background:var(--bg3);border-radius:8px;overflow:hidden;margin-bottom:6px;}
+.gasBarFill{height:100%;border-radius:8px;transition:width 1s ease, background .5s;}
+.gasBarLabels{display:flex;justify-content:space-between;margin-bottom:10px;}
+.gasBarLabel{font-size:10px;color:var(--tx3);font-weight:500;}
+.gasInfo{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.gasGallons{font-size:22px;font-weight:700;color:var(--tx);}
+.gasGallonsSub{font-size:11px;color:var(--tx3);margin-top:1px;}
+.gasDays{font-size:13px;color:var(--tx2);}
+.gasDaysRed{color:var(--rd);}
+.gasActions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.gasSetBtn{background:var(--bg3);border:1px solid var(--bo2);border-radius:var(--rs);color:var(--tx2);font-size:12px;padding:6px 12px;cursor:pointer;font-family:inherit;}
+.gasAlertBtn{background:var(--rd2);border:1px solid rgba(224,85,85,.3);border-radius:var(--rs);color:var(--rd);font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit;}
+.gasAlertBtn:hover{background:var(--rd);color:#fff;}
+.gasRefillBtn{background:var(--gr2);border:1px solid rgba(31,168,122,.3);border-radius:var(--rs);color:var(--gr);font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit;}
+.gasModal{max-width:320px;}
 </style>
 </head>
 <body>
+
 
 
 
@@ -613,6 +632,7 @@ input[type=file]{display:none;}
         <button class="bfBtn" data-b="arepa"><img id="bfImgA" alt="">Arepa</button>
         <button class="bfBtn sm" data-b="smash"><img id="bfImgS" alt="">Smash</button>
       </div>
+      <div id="gasWidget" style="margin:0 0 12px"></div>
       <div id="movFeedback" class="movFeedback"></div>
       <div id="invList"></div>
     </div>
@@ -818,10 +838,33 @@ input[type=file]{display:none;}
 
 
 
+
+
+<div class="ov" id="ovGas">
+  <div class="modal gasModal">
+    <h3>&#128293; Configurar Gas Propano</h3>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Define el ciclo de duración de un tanque de 100 galones.</p>
+    <div class="fg">
+      <label>Días que dura el tanque</label>
+      <input type="number" id="gasCycleDays" min="1" max="365" placeholder="Ej: 21" style="font-size:18px;font-weight:600">
+    </div>
+    <div class="fg" style="display:flex;align-items:center;gap:10px;margin-top:4px">
+      <input type="checkbox" id="gasStarted" style="width:18px;height:18px">
+      <label for="gasStarted" style="margin:0;font-size:13px">Iniciar conteo desde hoy</label>
+    </div>
+    <div class="errBox" id="errGas"></div>
+    <div class="mact">
+      <button class="bc" onclick="closeOv('ovGas')">Cancelar</button>
+      <button class="bk" onclick="doSaveGas()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
 var _supMap={};
 function showSup(id){ showSupHistory(id); }
 function editSup(id){ openEditSup(id); }
@@ -829,7 +872,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "3.2.0";
+var APP_VERSION = "3.3.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -2861,6 +2904,7 @@ function initFirebase(){
     console.log("Firebase connected");
     startListeners();
     watchConnection();
+    startGasListener();
     // Eagerly load sups so ingredient modal works immediately
     fbDb.ref(path('sups')).once('value').then(function(snap){
       var data=snap.val();
@@ -3111,6 +3155,161 @@ function watchConnection(){
       var activeTab=document.querySelector('.tab.on');
       if(activeTab) switchTab(activeTab.id);
     }
+  });
+}
+
+
+
+
+// ══════════════════════════════════════════════════════
+// GAS PROPANO MODULE
+// ══════════════════════════════════════════════════════
+var GAS_KEY = 'sx_gas_propano';
+
+function getGasData(){
+  var d = LS.get(GAS_KEY, null);
+  if(!d) return {gallons:100, startDate:null, cycleDays:21, lastRefill:null};
+  return d;
+}
+
+function saveGasData(d){
+  LS.set(GAS_KEY, d);
+  if(FB_READY && fbDb) fbDb.ref(path('gas_propano')).set(d);
+}
+
+function calcGasGallons(){
+  var d = getGasData();
+  if(!d.startDate) return 100;
+  var start = new Date(d.startDate);
+  var now = new Date();
+  var elapsed = (now - start) / (1000*60*60*24); // days elapsed
+  var pct = Math.max(0, 1 - (elapsed / d.cycleDays));
+  return Math.round(pct * 100);
+}
+
+function calcGasDaysLeft(){
+  var d = getGasData();
+  if(!d.startDate) return d.cycleDays;
+  var start = new Date(d.startDate);
+  var now = new Date();
+  var elapsed = (now - start) / (1000*60*60*24);
+  return Math.max(0, Math.ceil(d.cycleDays - elapsed));
+}
+
+function getGasColor(gallons){
+  if(gallons > 60) return 'var(--gr)';
+  if(gallons > 30) return 'var(--am)';
+  return 'var(--rd)';
+}
+
+function renderGasWidget(){
+  var el = document.getElementById('gasWidget');
+  if(!el) return;
+  var d = getGasData();
+  var gallons = calcGasGallons();
+  var daysLeft = calcGasDaysLeft();
+  var pct = gallons; // 0-100
+  var color = getGasColor(gallons);
+  var isAdmin = cur && cur.isAdmin;
+  var started = !!d.startDate;
+  
+  // Build marker labels 10..100
+  var labels = '';
+  for(var g=10; g<=100; g+=10){
+    labels += '<span class="gasBarLabel">'+g+'gal</span>';
+  }
+  
+  var daysClass = daysLeft <= 5 ? 'gasDaysRed' : '';
+  
+  var html = '<div class="gasTitle">🔥 Gas Propano</div>'
+    + '<div class="gasBarWrap">'
+    +   '<div class="gasBarFill" id="gasBarFill" style="width:'+pct+'%;background:'+color+'"></div>'
+    + '</div>'
+    + '<div class="gasBarLabels">'+labels+'</div>'
+    + '<div class="gasInfo">'
+    +   '<div><div class="gasGallons">'+gallons+' gal</div><div class="gasGallonsSub">de 100 galones</div></div>'
+    +   (started
+          ? '<div class="gasDays '+daysClass+'">'+daysLeft+' días restantes (ciclo: '+d.cycleDays+' días)</div>'
+          : '<div class="gasDays">Ciclo: '+d.cycleDays+' días — no iniciado</div>')
+    + '</div>'
+    + '<div class="gasActions">';
+  
+  if(isAdmin){
+    html += '<button class="gasSetBtn" onclick="openGasModal()">⚙️ Configurar ciclo</button>';
+    if(!started || gallons === 0){
+      html += '<button class="gasRefillBtn" onclick="gasRefill()">🔄 Nuevo tanque (100 gal)</button>';
+    }
+  } else {
+    html += '<button class="gasAlertBtn" onclick="gasAlertCart()">⚠️ Pedir gas</button>';
+  }
+  
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function gasRefill(){
+  var d = getGasData();
+  d.startDate = new Date().toISOString();
+  d.lastRefill = new Date().toISOString();
+  d.gallons = 100;
+  saveGasData(d);
+  renderGasWidget();
+  renderInv(); // refresh
+}
+
+function openGasModal(){
+  var d = getGasData();
+  G('gasCycleDays').value = d.cycleDays;
+  G('gasStarted').checked = !!d.startDate;
+  showErr('errGas','');
+  openOv('ovGas');
+}
+
+function doSaveGas(){
+  var days = parseInt(G('gasCycleDays').value);
+  if(!days || days < 1 || days > 365){ showErr('errGas','Ingresa días válidos (1-365).'); return; }
+  var d = getGasData();
+  d.cycleDays = days;
+  if(G('gasStarted').checked && !d.startDate){
+    d.startDate = new Date().toISOString();
+  } else if(!G('gasStarted').checked){
+    d.startDate = null;
+  }
+  saveGasData(d);
+  closeOv('ovGas');
+  renderGasWidget();
+}
+
+function gasAlertCart(){
+  // Add gas propano alert to admin cart
+  var adminCart = getCart(0);
+  var already = adminCart.find(function(c){ return c.name === 'Gas Propano'; });
+  if(already){ alert('Ya hay una alerta de Gas Propano en el carrito de compras.'); return; }
+  adminCart.push({
+    ingId: 'gas',
+    name: 'Gas Propano',
+    unit: 'tanque',
+    qty: 1,
+    note: '⚠️ Gas bajo — solicitado por '+cur.name,
+    emoji: '🔥',
+    isGasAlert: true
+  });
+  setCart(0, adminCart);
+  updateBadge();
+  alert('✅ Alerta enviada al carrito de compras del dueño.');
+}
+
+// Auto-refresh gas widget every minute
+setInterval(function(){
+  if(cur && document.getElementById('gasWidget')) renderGasWidget();
+}, 60000);
+
+// Firebase listener for gas
+function startGasListener(){
+  if(!FB_READY||!fbDb) return;
+  fbDb.ref(path('gas_propano')).on('value', function(snap){
+    var data = snap.val();
+    if(data){ LS.set(GAS_KEY, data); renderGasWidget(); }
   });
 }
 
