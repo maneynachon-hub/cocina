@@ -532,9 +532,59 @@ input[type=file]{display:none;}
 .gasAlertBtn:hover{background:var(--rd);color:#fff;}
 .gasRefillBtn{background:var(--gr2);border:1px solid rgba(31,168,122,.3);border-radius:var(--rs);color:var(--gr);font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;font-family:inherit;}
 .gasModal{max-width:320px;}
+
+/* ── CHECKLIST V2 ── */
+.tItem{ padding:10px 14px; border-radius:var(--rs); margin-bottom:6px; background:var(--bg2); border:1px solid var(--bo); }
+.tItemDone{ opacity:.6; }
+.tItemHeader{ display:flex; align-items:center; gap:10px; cursor:pointer; }
+.tCb{ width:22px; height:22px; border-radius:6px; border:2px solid var(--bo2); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
+.tCb.ok{ background:var(--gr); border-color:var(--gr); }
+.tLbl{ font-size:13px; font-weight:500; flex:1; }
+.tLbl.ok{ text-decoration:line-through; color:var(--tx3); }
+.tNote{ font-size:11px; color:var(--tx3); margin-top:1px; }
+.tType{ font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; letter-spacing:.3px; flex-shrink:0; }
+.tTypeRec{ background:rgba(31,168,122,.12); color:var(--gr); }
+.tTypeUniq{ background:rgba(212,160,23,.12); color:var(--am); }
+.tCommentBtn{ background:none; border:none; font-size:14px; cursor:pointer; padding:2px 4px; opacity:.6; flex-shrink:0; }
+.tCommentBtn:hover{ opacity:1; }
+.tCommentExpand{ overflow:hidden; max-height:0; transition:max-height .25s ease; }
+.tCommentExpand.open{ max-height:200px; }
+.tCommentBox{ margin-top:8px; padding-top:8px; border-top:1px solid var(--bo); }
+.tCommentTa{ width:100%; background:var(--bg3); border:1px solid var(--bo2); border-radius:var(--rs); color:var(--tx); font-family:inherit; font-size:12px; padding:8px 10px; resize:none; box-sizing:border-box; outline:none; }
+.tCommentTa:focus{ border-color:var(--am); }
+.tCommentSave{ margin-top:6px; font-size:12px; background:var(--am2); border:1px solid rgba(212,160,23,.3); border-radius:var(--rs); color:var(--am); padding:4px 12px; cursor:pointer; font-family:inherit; }
+.tCommentRequired{ font-size:11px; color:var(--rd); margin-top:4px; }
+/* ── DAILY REPORT ── */
+.reportWrap{ max-width:760px; margin:0 auto; padding:20px 0; }
+.reportDate{ font-size:22px; font-weight:700; color:var(--tx); margin-bottom:4px; }
+.reportSub{ font-size:13px; color:var(--tx2); margin-bottom:24px; }
+.reportEmp{ background:var(--bg2); border:1px solid var(--bo); border-radius:var(--r); margin-bottom:16px; overflow:hidden; }
+.reportEmpHdr{ padding:14px 18px; border-bottom:1px solid var(--bo); display:flex; align-items:center; gap:14px; }
+.reportEmpAv{ width:38px; height:38px; border-radius:50%; background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--tx2); flex-shrink:0; }
+.reportEmpName{ font-size:15px; font-weight:600; flex:1; }
+.reportPct{ font-size:20px; font-weight:700; }
+.reportPctGr{ color:var(--gr); }
+.reportPctAm{ color:var(--am); }
+.reportPctRd{ color:var(--rd); }
+.reportProgBar{ height:4px; background:var(--bg3); }
+.reportProgFill{ height:100%; transition:width .4s; }
+.reportSection{ padding:12px 18px; }
+.reportSectionTitle{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--tx3); margin-bottom:10px; }
+.reportTask{ display:flex; align-items:flex-start; gap:10px; padding:7px 0; border-bottom:1px solid var(--bo); }
+.reportTask:last-child{ border-bottom:none; }
+.reportTaskIco{ font-size:13px; flex-shrink:0; margin-top:1px; }
+.reportTaskName{ font-size:13px; font-weight:500; flex:1; }
+.reportTaskTime{ font-size:11px; color:var(--tx3); white-space:nowrap; }
+.reportTaskComment{ font-size:12px; color:var(--tx2); margin-top:3px; background:var(--bg3); border-radius:4px; padding:4px 8px; font-style:italic; }
+.reportTaskJustify{ font-size:12px; color:var(--rd); margin-top:3px; background:var(--rd2); border-radius:4px; padding:4px 8px; }
+.reportNoTasks{ font-size:13px; color:var(--tx3); padding:8px 0; font-style:italic; }
+.reportNavBtns{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.reportNavBtn{ background:var(--bg2); border:1px solid var(--bo2); border-radius:var(--rs); color:var(--tx2); font-size:12px; padding:6px 12px; cursor:pointer; font-family:inherit; }
+.reportNavBtn.on{ background:var(--am2); border-color:var(--am); color:var(--am); font-weight:600; }
 </style>
 </head>
 <body>
+
 
 
 
@@ -617,6 +667,7 @@ input[type=file]{display:none;}
       <button class="appTab" data-tab="tREC"><span class="tabIco">&#128203;</span><span class="tabLbl">Recetas</span></button>
       <button class="appTab" id="tabAdmMob" data-tab="tADM" style="display:none"><span class="tabIco">&#9881;</span><span class="tabLbl">Admin</span></button>
       <button class="appTab" id="tabSupMob" data-tab="tSUP" style="display:none"><span class="tabIco">&#128100;</span><span class="tabLbl">Suplidores</span></button>
+      <button class="appTab" id="tabRepMob" data-tab="tREP" style="display:none"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
     <button class="tab appTab" id="tREP" onclick="switchTab('tREP')"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
     </div>
   </div>
@@ -865,10 +916,39 @@ input[type=file]{display:none;}
 </div>
 
 
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
+function expandComment(tid, forceOpen){
+  var box=G('tcm_'+tid); if(!box) return;
+  if(forceOpen) box.classList.add('open');
+  else box.classList.toggle('open');
+  if(box.classList.contains('open')){
+    var ta=box.querySelector('textarea'); if(ta) ta.focus();
+  }
+}
+
+function saveComment(tid){
+  var ta=G('tca_'+tid); if(!ta) return;
+  var val=ta.value.trim();
+  var data=getCL(cur.id);
+  if(!data.comments) data.comments={};
+  var myTasks=tasksForEmp(cur.id);
+  var task=myTasks.find(function(t){return t.id===tid;});
+  if(!data.cl[tid]&&task&&task.requireComment&&!val){
+    ta.style.borderColor='var(--rd)';
+    ta.placeholder='Justificación obligatoria...';
+    return;
+  }
+  ta.style.borderColor='';
+  data.comments[tid]=val;
+  setCL(cur.id,data);
+  var box=G('tcm_'+tid); if(box) box.classList.remove('open');
+}
+
 
 
 var _supMap={};
@@ -878,7 +958,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "3.3.0";
+var APP_VERSION = "3.4.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -1079,6 +1159,7 @@ function switchTab(id){
   if(id==="tREC")  renderRec();
   if(id==="tADM")  renderAdm();
   if(id==="tSUP")  renderSups();
+  if(id==="tREP")  renderDailyReport();
 }
 
 function updateBadge(){
@@ -1143,6 +1224,7 @@ function startApp(){
     G("tabSup").style.display="inline-flex";
     if(G("tabAdmMob")) G("tabAdmMob").style.display="inline-flex";
     if(G("tabSupMob")) G("tabSupMob").style.display="inline-flex";
+    if(G("tabRepMob")) G("tabRepMob").style.display="inline-flex";
     G("recAdmBtns").style.display="block";
     G("invAdmBtns").style.display="flex";
   } else {
@@ -1150,6 +1232,7 @@ function startApp(){
     G("tabSup").style.display="none";
     if(G("tabAdmMob")) G("tabAdmMob").style.display="none";
     if(G("tabSupMob")) G("tabSupMob").style.display="none";
+    if(G("tabRepMob")) G("tabRepMob").style.display="none";
     G("recAdmBtns").style.display="none";
     G("invAdmBtns").style.display="none";
   }
@@ -1162,7 +1245,7 @@ function startApp(){
 function renderCL(){
   if(cur.isAdmin){ renderAdmCL(); return; }
   var myTasks = tasksForEmp(cur.id);
-  var data=getCL(cur.id), cl=data.cl;
+  var data=getCL(cur.id), cl=data.cl||{}, comments=data.comments||{};
   var done=myTasks.filter(function(t){ return cl[t.id]; }).length;
   var pct=myTasks.length>0 ? Math.round(done/myTasks.length*100) : 0;
   var html='<div class="clProgCard">'
@@ -1183,13 +1266,32 @@ function renderCL(){
       +'<span class="secTt">'+time+'</span>'
       +'<span class="secCnt'+(gd===gt.length?" ok":"") +'" id="sc_'+tk+'">'+gd+'/'+gt.length+'</span></div>'
       +'<div class="secBdy" id="sb_'+tk+'">';
+    var comments_=data.comments||{};
     gt.forEach(function(t){
       var d=!!cl[t.id];
-      html+='<div class="tItem" onclick="tgTask('+t.id+')">'
-        +'<div class="tCb'+(d?" ok":"") +'" id="tcb_'+t.id+'">'+chkSvg()+'</div>'
-        +'<div><div class="tLbl'+(d?" ok":"") +'" id="tlb_'+t.id+'">'+t.label+'</div>'
-        +(t.note?'<div class="tNote">'+t.note+'</div>':"")
-        +'</div></div>';
+      var isUniq=t.taskType==='unique';
+      var hasCom=t.requireComment||t.allowComment;
+      var existCom=comments_[t.id]||'';
+      var typeTag=isUniq?'<span class="tType tTypeUniq">&#11088; Unica</span>':'<span class="tType tTypeRec">&#128257; Diaria</span>';
+      html+='<div class="tItem'+(d?' tItemDone':'')+'" id="ti_'+t.id+'">'
+        +'<div class="tItemHeader" onclick="tgTask('+t.id+')">'
+        +'<div class="tCb'+(d?' ok':'')+'" id="tcb_'+t.id+'">'+chkSvg()+'</div>'
+        +'<div style="flex:1"><div class="tLbl'+(d?' ok':'')+'" id="tlb_'+t.id+'">'+t.label+'</div>'
+        +(t.note?'<div class="tNote">'+t.note+'</div>':'')
+        +'</div>'
+        +typeTag
+        +(hasCom?'<button class="tCommentBtn" onclick="event.stopPropagation();expandComment('+t.id+')">&#128172;</button>':'')
+        +'</div>';
+      if(hasCom){
+        var mustJ=!d&&t.requireComment;
+        html+='<div class="tCommentExpand'+((mustJ&&!existCom)||existCom?' open':'')+'" id="tcm_'+t.id+'">'
+          +'<div class="tCommentBox">'
+          +(mustJ?'<div class="tCommentRequired">&#9888;&#65039; Justificación obligatoria</div>':'')
+          +'<textarea class="tCommentTa" id="tca_'+t.id+'" rows="2" placeholder="'+(mustJ?'Explica por qué no se realizó...':'Nota opcional...')+'">'+existCom+'</textarea>'
+          +'<button class="tCommentSave" onclick="saveComment('+t.id+')">Guardar</button>'
+          +'</div></div>';
+      }
+      html+='</div>';
     });
     html+='</div></div>';
   });
@@ -1206,9 +1308,11 @@ function tgTask(tid){
   var data=getCL(cur.id), cl=data.cl;
   cl[tid]=!cl[tid];
   data.ts[tid]=cl[tid]?nowTime():null;
+  if(!data.comments) data.comments={};
   setCL(cur.id,data);
   var taskObj2=myTasks.find(function(x){return x.id===tid;});
   if(taskObj2) logAct("checklist",(cl[tid]?"Completó: ":"Desmarcó: ")+taskObj2.label, cur.name);
+  if(!cl[tid]&&taskObj2&&taskObj2.requireComment) setTimeout(function(){expandComment(tid,true);},80);
   var cb=G("tcb_"+tid), lb=G("tlb_"+tid);
   if(cb){ if(cl[tid]) cb.classList.add("ok"); else cb.classList.remove("ok"); }
   if(lb){ if(cl[tid]) lb.classList.add("ok"); else lb.classList.remove("ok"); }
@@ -1288,10 +1392,18 @@ function addTaskRowWithData(t){
   });
   empChecks+='</div></div>';
 
+  var isUniq=t&&t.taskType==='unique';
+  var reqCom=t&&t.requireComment;
+  var uid=t?t.id:'new'+Date.now();
   row.innerHTML='<div class="taskRowTop">'
     +'<div class="fg" style="flex:2"><input type="text" value="'+(t?t.label.replace(/"/g,"&quot;"):"") +'" placeholder="Descripcion de la tarea..."></div>'
     +'<div class="fg" style="max-width:90px"><input type="text" value="'+(t?t.time:"") +'" placeholder="10:00 AM"></div>'
     +'<button class="btnRm" onclick="this.closest(\'.taskRow\').remove()">&#215;</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:16px;padding:6px 0;flex-wrap:wrap;font-size:12px;color:var(--tx2)">'
+    +'<label style="display:flex;align-items:center;gap:5px"><input type="radio" name="ttype_'+uid+'" value="recurring" '+(isUniq?'':'checked')+'> &#128257; Diaria</label>'
+    +'<label style="display:flex;align-items:center;gap:5px"><input type="radio" name="ttype_'+uid+'" value="unique" '+(isUniq?'checked':'')+'> &#11088; &Uacute;nica</label>'
+    +'<label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="reqComChk" '+(reqCom?'checked':'')+'> &#128172; Requiere comentario</label>'
     +'</div>'
     +empChecks;
   list.appendChild(row);
@@ -2471,8 +2583,14 @@ function checkDailyReset(){
   var archiveDate = lastReset||today;
   archiveChecklists(archiveDate);
   publishFinesToBiometric(archiveDate);
-  // Reset all checklists
-  emps.forEach(function(e){ setCL(e.id, {cl:{},ts:{}}); });
+  // Reset checklists — recurring tasks clear, unique tasks: keep uncompleted
+  emps.forEach(function(e){
+    var data=getCL(e.id), newCl={};
+    tasks.forEach(function(t){
+      if(t.taskType==='unique'&&!data.cl[t.id]) newCl[t.id]=false;
+    });
+    setCL(e.id,{cl:newCl,ts:{},comments:{}});
+  });
   LS.set(K_LAST_RESET, today);
 }
 
@@ -2485,13 +2603,14 @@ function archiveChecklists(dateStr){
     var myTasks = tasksForEmp(e.id);
     var completed = myTasks.filter(function(t){ return data.cl[t.id]; });
     var missed = myTasks.filter(function(t){ return !data.cl[t.id]; });
-    var fines = missed.length * 100; // RD$100 per missed task
+    var comments=data.comments||{};
+    var fines = missed.filter(function(t){return t.taskType!=='unique';}).length * 100;
     entry.employees.push({
       id: e.id,
       name: e.name,
       role: e.role,
-      completed: completed.map(function(t){ return {id:t.id, label:t.label, time:data.ts[t.id]||""}; }),
-      missed: missed.map(function(t){ return {id:t.id, label:t.label}; }),
+      completed: completed.map(function(t){ return {id:t.id,label:t.label,time:data.ts[t.id]||"",comment:comments[t.id]||""}; }),
+      missed: missed.map(function(t){ return {id:t.id,label:t.label,justify:comments[t.id]||""}; }),
       fines: fines,
       totalTasks: myTasks.length,
       completedCount: completed.length
@@ -3319,6 +3438,74 @@ function startGasListener(){
   });
 }
 
+
+
+
+
+var reportDateIdx=0;
+
+function renderDailyReport(){
+  var panel=G('repView'); if(!panel) return;
+  if(!cur||!cur.isAdmin){
+    panel.innerHTML='<div class="noTaskMsg">Solo el due&ntilde;o puede ver el reporte.</div>';
+    return;
+  }
+  var hist=getCLHist();
+  var navHtml='<div class="reportNavBtns">';
+  var navLabels=['Hoy','Ayer'];
+  for(var i=0;i<Math.min(7,hist.length);i++){
+    var lbl=i<2?navLabels[i]:(hist[i]?hist[i].date:'');
+    navHtml+='<button class="reportNavBtn'+(i===reportDateIdx?' on':'')+'" onclick="reportDateIdx='+i+';renderDailyReport()">'+lbl+'</button>';
+  }
+  navHtml+='</div>';
+  var entry=hist[reportDateIdx];
+  if(!entry){
+    panel.innerHTML=navHtml+'<div class="reportWrap"><p style="color:var(--tx3);padding:20px 0">No hay datos aun para esta fecha.</p></div>';
+    return;
+  }
+  var html=navHtml+'<div class="reportWrap">';
+  html+='<div class="reportDate">&#128203; Reporte '+entry.date+'</div>';
+  html+='<div class="reportSub">'+entry.employees.length+' empleados</div>';
+  entry.employees.forEach(function(emp){
+    var pct=emp.totalTasks>0?Math.round(emp.completedCount/emp.totalTasks*100):0;
+    var pctCls=pct>=80?'reportPctGr':pct>=50?'reportPctAm':'reportPctRd';
+    var barClr=pct>=80?'var(--gr)':pct>=50?'var(--am)':'var(--rd)';
+    html+='<div class="reportEmp">';
+    html+='<div class="reportEmpHdr"><div class="reportEmpAv">'+emp.name.substring(0,2).toUpperCase()+'</div>';
+    html+='<div style="flex:1"><div class="reportEmpName">'+emp.name+'</div><div style="font-size:11px;color:var(--tx3)">'+emp.role+'</div></div>';
+    html+='<div class="reportPct '+pctCls+'">'+pct+'%</div></div>';
+    html+='<div class="reportProgBar"><div class="reportProgFill" style="width:'+pct+'%;background:'+barClr+'"></div></div>';
+    html+='<div class="reportSection">';
+    html+='<div class="reportSectionTitle">&#10003; Realizadas ('+emp.completedCount+')</div>';
+    if(emp.completed&&emp.completed.length){
+      emp.completed.forEach(function(t){
+        html+='<div class="reportTask"><span class="reportTaskIco">&#9989;</span>';
+        html+='<div style="flex:1"><div class="reportTaskName">'+t.label+'</div>';
+        if(t.comment) html+='<div class="reportTaskComment">&#128172; '+t.comment+'</div>';
+        html+='</div><span class="reportTaskTime">'+t.time+'</span></div>';
+      });
+    } else {
+      html+='<div class="reportNoTasks">Ninguna tarea completada.</div>';
+    }
+    html+='</div>';
+    var missed=emp.missed&&emp.missed.length?emp.missed:[];
+    if(missed.length){
+      html+='<div class="reportSection" style="border-top:1px solid var(--bo)">';
+      html+='<div class="reportSectionTitle">&#10005; No realizadas ('+missed.length+')</div>';
+      missed.forEach(function(t){
+        html+='<div class="reportTask"><span class="reportTaskIco">&#10060;</span>';
+        html+='<div style="flex:1"><div class="reportTaskName">'+t.label+'</div>';
+        if(t.justify) html+='<div class="reportTaskJustify">&#128221; '+t.justify+'</div>';
+        else html+='<div class="reportTaskJustify" style="color:var(--tx3);background:var(--bg3)">Sin justificación</div>';
+        html+='</div></div>';
+      });
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  html+='</div>';
+  panel.innerHTML=html;
+}
 
 </script>
 <script>
