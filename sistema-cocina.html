@@ -581,9 +581,35 @@ input[type=file]{display:none;}
 .reportNavBtns{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
 .reportNavBtn{ background:var(--bg2); border:1px solid var(--bo2); border-radius:var(--rs); color:var(--tx2); font-size:12px; padding:6px 12px; cursor:pointer; font-family:inherit; }
 .reportNavBtn.on{ background:var(--am2); border-color:var(--am); color:var(--am); font-weight:600; }
+
+/* ── TASK MODAL V2 ── */
+.taskCard{ background:var(--bg3); border:1px solid var(--bo); border-radius:var(--r); padding:14px; margin-bottom:10px; position:relative; }
+.taskCardNum{ position:absolute; top:10px; right:36px; font-size:10px; font-weight:700; color:var(--tx3); background:var(--bg2); padding:2px 8px; border-radius:10px; }
+.taskCardTop{ display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; }
+.taskLabelInput{ flex:1; background:var(--bg2); border:1px solid var(--bo2); border-radius:var(--rs); color:var(--tx); font-family:inherit; font-size:13px; font-weight:500; padding:8px 10px; outline:none; }
+.taskLabelInput:focus{ border-color:var(--am); }
+.taskTimeSelect{ background:var(--bg2); border:1px solid var(--bo2); border-radius:var(--rs); color:var(--tx); font-family:inherit; font-size:13px; padding:8px 10px; outline:none; min-width:120px; cursor:pointer; }
+.taskTimeSelect:focus{ border-color:var(--am); }
+.taskCardMeta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.taskTypeBtn{ display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:20px; border:1px solid var(--bo); background:var(--bg2); font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; color:var(--tx2); }
+.taskTypeBtn input{ display:none; }
+.taskTypeBtn.selRec{ background:rgba(31,168,122,.12); border-color:rgba(31,168,122,.4); color:var(--gr); }
+.taskTypeBtn.selUniq{ background:rgba(212,160,23,.12); border-color:rgba(212,160,23,.4); color:var(--am); }
+.taskCommentToggle{ display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:20px; border:1px solid var(--bo); background:var(--bg2); font-size:11px; font-weight:600; cursor:pointer; color:var(--tx2); transition:all .15s; }
+.taskCommentToggle input{ display:none; }
+.taskCommentToggle.selCom{ background:rgba(99,102,241,.12); border-color:rgba(99,102,241,.4); color:#818cf8; }
+.taskEmpRow{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.taskEmpChip{ display:flex; align-items:center; gap:4px; padding:4px 10px; border-radius:20px; border:1px solid var(--bo); background:var(--bg2); font-size:11px; cursor:pointer; color:var(--tx2); transition:all .15s; }
+.taskEmpChip input{ display:none; }
+.taskEmpChip.selEmp{ background:var(--am2); border-color:rgba(212,160,23,.4); color:var(--am); font-weight:600; }
+.taskDelBtn{ background:none; border:none; color:var(--tx3); cursor:pointer; font-size:16px; padding:4px 6px; line-height:1; border-radius:var(--rs); }
+.taskDelBtn:hover{ color:var(--rd); background:var(--rd2); }
+.taskAddBtn{ display:flex; align-items:center; gap:8px; justify-content:center; width:100%; padding:10px; background:var(--bg3); border:1px dashed var(--bo2); border-radius:var(--r); color:var(--tx2); font-size:13px; cursor:pointer; font-family:inherit; margin-bottom:12px; transition:all .15s; }
+.taskAddBtn:hover{ border-color:var(--am); color:var(--am); background:var(--am2); }
 </style>
 </head>
 <body>
+
 
 
 
@@ -803,9 +829,9 @@ input[type=file]{display:none;}
 
 <div class="ov" id="ovTasks">
   <div class="modal" style="max-width:520px">
-    <h3>Tareas del checklist</h3><p>Define las tareas diarias para todos los empleados.</p>
+    <h3>&#9881; Gestionar tareas</h3><p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Configura las tareas del checklist diario.</p>
     <div id="taskList"></div>
-    <button class="btnAddRow" id="btnATR">+ Agregar tarea</button>
+    <button class="taskAddBtn" id="btnATR">&#65291; Agregar nueva tarea</button>
     <div class="mact"><button class="bc" id="btnTC">Cancelar</button><button class="bk" id="btnTOk">Guardar tareas</button></div>
   </div>
 </div>
@@ -919,10 +945,12 @@ input[type=file]{display:none;}
 
 
 
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
 
 
 function expandComment(tid, forceOpen){
@@ -963,7 +991,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "3.5.0";
+var APP_VERSION = "3.6.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -1364,40 +1392,86 @@ function loadTaskRows(){
 
 function addTaskRowWithData(t){
   var list=G("taskList");
-  var row=document.createElement("div");
-  row.className="taskRow";
-  if(t) row.dataset.id=t.id;
-
-  // Build employee checkboxes
-  var empChecks='<div class="taskEmpPicker">';
-  empChecks+='<div class="tepLabel">Asignar a:</div>';
-  empChecks+='<div class="tepOptions">';
-  // "Todos" option
-  var allChecked=!t||!t.assignedTo||t.assignedTo.length===0;
-  empChecks+='<label class="tepChk"><input type="checkbox" value="all" '+(allChecked?"checked":"")+'onchange="tgAllEmp(this)"> Todos</label>';
-  emps.forEach(function(e){
-    var checked=t&&t.assignedTo&&t.assignedTo.indexOf(e.id)>=0;
-    empChecks+='<label class="tepChk"><input type="checkbox" value="'+e.id+'" '+(checked?"checked":"")+'onchange="tgOneEmp(this)"> '+e.name+'</label>';
-  });
-  empChecks+='</div></div>';
+  var card=document.createElement("div");
+  card.className="taskCard taskRow";
+  if(t) card.dataset.id=t.id;
 
   var isUniq=t&&t.taskType==='unique';
   var reqCom=t&&t.requireComment;
-  var uid=t?t.id:'new'+Date.now();
-  row.innerHTML='<div class="taskRowTop">'
-    +'<div class="fg" style="flex:2"><input type="text" value="'+(t?t.label.replace(/"/g,"&quot;"):"") +'" placeholder="Descripcion de la tarea..."></div>'
-    +'<div class="fg" style="max-width:90px"><input type="text" value="'+(t?t.time:"") +'" placeholder="10:00 AM"></div>'
-    +'<button class="btnRm" onclick="this.closest(\'.taskRow\').remove()">&#215;</button>'
-    +'</div>'
-    +'<div style="display:flex;gap:16px;padding:6px 0;flex-wrap:wrap;font-size:12px;color:var(--tx2)">'
-    +'<label style="display:flex;align-items:center;gap:5px"><input type="radio" name="ttype_'+uid+'" value="recurring" '+(isUniq?'':'checked')+'> &#128257; Diaria</label>'
-    +'<label style="display:flex;align-items:center;gap:5px"><input type="radio" name="ttype_'+uid+'" value="unique" '+(isUniq?'checked':'')+'> &#11088; &Uacute;nica</label>'
-    +'<label style="display:flex;align-items:center;gap:5px"><input type="checkbox" class="reqComChk" '+(reqCom?'checked':'')+'> &#128172; Requiere comentario</label>'
-    +'</div>'
-    +empChecks;
-  list.appendChild(row);
+  var uid=t?('t'+t.id):('n'+Date.now());
+  var curTime=t?t.time:'10:00 AM';
+  var allChecked=!t||!t.assignedTo||t.assignedTo.length===0;
+
+  // Time options
+  var timeOpts='<option value="6:00 AM">6:00 AM</option>\n<option value="6:05 AM">6:05 AM</option>\n<option value="6:10 AM">6:10 AM</option>\n<option value="6:15 AM">6:15 AM</option>\n<option value="6:20 AM">6:20 AM</option>\n<option value="6:25 AM">6:25 AM</option>\n<option value="6:30 AM">6:30 AM</option>\n<option value="6:35 AM">6:35 AM</option>\n<option value="6:40 AM">6:40 AM</option>\n<option value="6:45 AM">6:45 AM</option>\n<option value="6:50 AM">6:50 AM</option>\n<option value="6:55 AM">6:55 AM</option>\n<option value="7:00 AM">7:00 AM</option>\n<option value="7:05 AM">7:05 AM</option>\n<option value="7:10 AM">7:10 AM</option>\n<option value="7:15 AM">7:15 AM</option>\n<option value="7:20 AM">7:20 AM</option>\n<option value="7:25 AM">7:25 AM</option>\n<option value="7:30 AM">7:30 AM</option>\n<option value="7:35 AM">7:35 AM</option>\n<option value="7:40 AM">7:40 AM</option>\n<option value="7:45 AM">7:45 AM</option>\n<option value="7:50 AM">7:50 AM</option>\n<option value="7:55 AM">7:55 AM</option>\n<option value="8:00 AM">8:00 AM</option>\n<option value="8:05 AM">8:05 AM</option>\n<option value="8:10 AM">8:10 AM</option>\n<option value="8:15 AM">8:15 AM</option>\n<option value="8:20 AM">8:20 AM</option>\n<option value="8:25 AM">8:25 AM</option>\n<option value="8:30 AM">8:30 AM</option>\n<option value="8:35 AM">8:35 AM</option>\n<option value="8:40 AM">8:40 AM</option>\n<option value="8:45 AM">8:45 AM</option>\n<option value="8:50 AM">8:50 AM</option>\n<option value="8:55 AM">8:55 AM</option>\n<option value="9:00 AM">9:00 AM</option>\n<option value="9:05 AM">9:05 AM</option>\n<option value="9:10 AM">9:10 AM</option>\n<option value="9:15 AM">9:15 AM</option>\n<option value="9:20 AM">9:20 AM</option>\n<option value="9:25 AM">9:25 AM</option>\n<option value="9:30 AM">9:30 AM</option>\n<option value="9:35 AM">9:35 AM</option>\n<option value="9:40 AM">9:40 AM</option>\n<option value="9:45 AM">9:45 AM</option>\n<option value="9:50 AM">9:50 AM</option>\n<option value="9:55 AM">9:55 AM</option>\n<option value="10:00 AM">10:00 AM</option>\n<option value="10:05 AM">10:05 AM</option>\n<option value="10:10 AM">10:10 AM</option>\n<option value="10:15 AM">10:15 AM</option>\n<option value="10:20 AM">10:20 AM</option>\n<option value="10:25 AM">10:25 AM</option>\n<option value="10:30 AM">10:30 AM</option>\n<option value="10:35 AM">10:35 AM</option>\n<option value="10:40 AM">10:40 AM</option>\n<option value="10:45 AM">10:45 AM</option>\n<option value="10:50 AM">10:50 AM</option>\n<option value="10:55 AM">10:55 AM</option>\n<option value="11:00 AM">11:00 AM</option>\n<option value="11:05 AM">11:05 AM</option>\n<option value="11:10 AM">11:10 AM</option>\n<option value="11:15 AM">11:15 AM</option>\n<option value="11:20 AM">11:20 AM</option>\n<option value="11:25 AM">11:25 AM</option>\n<option value="11:30 AM">11:30 AM</option>\n<option value="11:35 AM">11:35 AM</option>\n<option value="11:40 AM">11:40 AM</option>\n<option value="11:45 AM">11:45 AM</option>\n<option value="11:50 AM">11:50 AM</option>\n<option value="11:55 AM">11:55 AM</option>\n<option value="12:00 PM">12:00 PM</option>\n<option value="12:05 PM">12:05 PM</option>\n<option value="12:10 PM">12:10 PM</option>\n<option value="12:15 PM">12:15 PM</option>\n<option value="12:20 PM">12:20 PM</option>\n<option value="12:25 PM">12:25 PM</option>\n<option value="12:30 PM">12:30 PM</option>\n<option value="12:35 PM">12:35 PM</option>\n<option value="12:40 PM">12:40 PM</option>\n<option value="12:45 PM">12:45 PM</option>\n<option value="12:50 PM">12:50 PM</option>\n<option value="12:55 PM">12:55 PM</option>\n<option value="1:00 PM">1:00 PM</option>\n<option value="1:05 PM">1:05 PM</option>\n<option value="1:10 PM">1:10 PM</option>\n<option value="1:15 PM">1:15 PM</option>\n<option value="1:20 PM">1:20 PM</option>\n<option value="1:25 PM">1:25 PM</option>\n<option value="1:30 PM">1:30 PM</option>\n<option value="1:35 PM">1:35 PM</option>\n<option value="1:40 PM">1:40 PM</option>\n<option value="1:45 PM">1:45 PM</option>\n<option value="1:50 PM">1:50 PM</option>\n<option value="1:55 PM">1:55 PM</option>\n<option value="2:00 PM">2:00 PM</option>\n<option value="2:05 PM">2:05 PM</option>\n<option value="2:10 PM">2:10 PM</option>\n<option value="2:15 PM">2:15 PM</option>\n<option value="2:20 PM">2:20 PM</option>\n<option value="2:25 PM">2:25 PM</option>\n<option value="2:30 PM">2:30 PM</option>\n<option value="2:35 PM">2:35 PM</option>\n<option value="2:40 PM">2:40 PM</option>\n<option value="2:45 PM">2:45 PM</option>\n<option value="2:50 PM">2:50 PM</option>\n<option value="2:55 PM">2:55 PM</option>\n<option value="3:00 PM">3:00 PM</option>\n<option value="3:05 PM">3:05 PM</option>\n<option value="3:10 PM">3:10 PM</option>\n<option value="3:15 PM">3:15 PM</option>\n<option value="3:20 PM">3:20 PM</option>\n<option value="3:25 PM">3:25 PM</option>\n<option value="3:30 PM">3:30 PM</option>\n<option value="3:35 PM">3:35 PM</option>\n<option value="3:40 PM">3:40 PM</option>\n<option value="3:45 PM">3:45 PM</option>\n<option value="3:50 PM">3:50 PM</option>\n<option value="3:55 PM">3:55 PM</option>\n<option value="4:00 PM">4:00 PM</option>\n<option value="4:05 PM">4:05 PM</option>\n<option value="4:10 PM">4:10 PM</option>\n<option value="4:15 PM">4:15 PM</option>\n<option value="4:20 PM">4:20 PM</option>\n<option value="4:25 PM">4:25 PM</option>\n<option value="4:30 PM">4:30 PM</option>\n<option value="4:35 PM">4:35 PM</option>\n<option value="4:40 PM">4:40 PM</option>\n<option value="4:45 PM">4:45 PM</option>\n<option value="4:50 PM">4:50 PM</option>\n<option value="4:55 PM">4:55 PM</option>\n<option value="5:00 PM">5:00 PM</option>\n<option value="5:05 PM">5:05 PM</option>\n<option value="5:10 PM">5:10 PM</option>\n<option value="5:15 PM">5:15 PM</option>\n<option value="5:20 PM">5:20 PM</option>\n<option value="5:25 PM">5:25 PM</option>\n<option value="5:30 PM">5:30 PM</option>\n<option value="5:35 PM">5:35 PM</option>\n<option value="5:40 PM">5:40 PM</option>\n<option value="5:45 PM">5:45 PM</option>\n<option value="5:50 PM">5:50 PM</option>\n<option value="5:55 PM">5:55 PM</option>\n<option value="6:00 PM">6:00 PM</option>\n<option value="6:05 PM">6:05 PM</option>\n<option value="6:10 PM">6:10 PM</option>\n<option value="6:15 PM">6:15 PM</option>\n<option value="6:20 PM">6:20 PM</option>\n<option value="6:25 PM">6:25 PM</option>\n<option value="6:30 PM">6:30 PM</option>\n<option value="6:35 PM">6:35 PM</option>\n<option value="6:40 PM">6:40 PM</option>\n<option value="6:45 PM">6:45 PM</option>\n<option value="6:50 PM">6:50 PM</option>\n<option value="6:55 PM">6:55 PM</option>\n<option value="7:00 PM">7:00 PM</option>\n<option value="7:05 PM">7:05 PM</option>\n<option value="7:10 PM">7:10 PM</option>\n<option value="7:15 PM">7:15 PM</option>\n<option value="7:20 PM">7:20 PM</option>\n<option value="7:25 PM">7:25 PM</option>\n<option value="7:30 PM">7:30 PM</option>\n<option value="7:35 PM">7:35 PM</option>\n<option value="7:40 PM">7:40 PM</option>\n<option value="7:45 PM">7:45 PM</option>\n<option value="7:50 PM">7:50 PM</option>\n<option value="7:55 PM">7:55 PM</option>\n<option value="8:00 PM">8:00 PM</option>\n<option value="8:05 PM">8:05 PM</option>\n<option value="8:10 PM">8:10 PM</option>\n<option value="8:15 PM">8:15 PM</option>\n<option value="8:20 PM">8:20 PM</option>\n<option value="8:25 PM">8:25 PM</option>\n<option value="8:30 PM">8:30 PM</option>\n<option value="8:35 PM">8:35 PM</option>\n<option value="8:40 PM">8:40 PM</option>\n<option value="8:45 PM">8:45 PM</option>\n<option value="8:50 PM">8:50 PM</option>\n<option value="8:55 PM">8:55 PM</option>\n<option value="9:00 PM">9:00 PM</option>\n<option value="9:05 PM">9:05 PM</option>\n<option value="9:10 PM">9:10 PM</option>\n<option value="9:15 PM">9:15 PM</option>\n<option value="9:20 PM">9:20 PM</option>\n<option value="9:25 PM">9:25 PM</option>\n<option value="9:30 PM">9:30 PM</option>\n<option value="9:35 PM">9:35 PM</option>\n<option value="9:40 PM">9:40 PM</option>\n<option value="9:45 PM">9:45 PM</option>\n<option value="9:50 PM">9:50 PM</option>\n<option value="9:55 PM">9:55 PM</option>\n<option value="10:00 PM">10:00 PM</option>\n<option value="10:05 PM">10:05 PM</option>\n<option value="10:10 PM">10:10 PM</option>\n<option value="10:15 PM">10:15 PM</option>\n<option value="10:20 PM">10:20 PM</option>\n<option value="10:25 PM">10:25 PM</option>\n<option value="10:30 PM">10:30 PM</option>\n<option value="10:35 PM">10:35 PM</option>\n<option value="10:40 PM">10:40 PM</option>\n<option value="10:45 PM">10:45 PM</option>\n<option value="10:50 PM">10:50 PM</option>\n<option value="10:55 PM">10:55 PM</option>\n<option value="11:00 PM">11:00 PM</option>\n<option value="11:05 PM">11:05 PM</option>\n<option value="11:10 PM">11:10 PM</option>\n<option value="11:15 PM">11:15 PM</option>\n<option value="11:20 PM">11:20 PM</option>\n<option value="11:25 PM">11:25 PM</option>\n<option value="11:30 PM">11:30 PM</option>\n<option value="11:35 PM">11:35 PM</option>\n<option value="11:40 PM">11:40 PM</option>\n<option value="11:45 PM">11:45 PM</option>\n<option value="11:50 PM">11:50 PM</option>\n<option value="11:55 PM">11:55 PM</option>';
+
+  // Employee chips
+  var empChips='<div class="taskEmpRow">';
+  empChips+='<label class="taskEmpChip'+(allChecked?' selEmp':'')+'"><input type="checkbox" value="all" '+(allChecked?'checked':'')+'onchange="tgAllEmpCard(this)"> 👥 Todos</label>';
+  emps.forEach(function(e){
+    var ck=t&&t.assignedTo&&t.assignedTo.indexOf(e.id)>=0;
+    empChips+='<label class="taskEmpChip'+(ck?' selEmp':'')+'"><input type="checkbox" value="'+e.id+'" '+(ck?'checked':'')+'onchange="tgOneEmpCard(this)"> '+e.name+'</label>';
+  });
+  empChips+='</div>';
+
+  card.innerHTML=
+    '<div class="taskCardTop">'    +'<input class="taskLabelInput" type="text" value="'+(t?t.label.replace(/"/g,"&quot;"):"")+'" placeholder="Descripción de la tarea...">'    +'<select class="taskTimeSelect">'+timeOpts+'</select>'    +'<button class="taskDelBtn" onclick="this.closest(\'.taskCard\').remove()" title="Eliminar">&#215;</button>'    +'</div>'    +'<div class="taskCardMeta">'    +'<label class="taskTypeBtn '+(isUniq?'':'selRec')+'"><input type="radio" name="tt_'+uid+'" value="recurring" '+(isUniq?'':'checked')+'onchange="tgTaskTypeLbl(this)"> 🔄 Diaria</label>'    +'<label class="taskTypeBtn '+(isUniq?'selUniq':'')+'"><input type="radio" name="tt_'+uid+'" value="unique" '+(isUniq?'checked':'')+'onchange="tgTaskTypeLbl(this)"> ⭐ Única</label>'    +'<label class="taskCommentToggle '+(reqCom?'selCom':'')+'"><input type="checkbox" class="reqComChk" '+(reqCom?'checked':'')+'onchange="tgComLbl(this)"> 💬 Requiere comentario</label>'    +'</div>'    +empChips;
+
+  // Set correct time in select
+  var sel=card.querySelector('.taskTimeSelect');
+  if(sel){
+    var found=false;
+    for(var i=0;i<sel.options.length;i++){
+      if(sel.options[i].value===curTime){ sel.selectedIndex=i; found=true; break; }
+    }
+    if(!found&&curTime){
+      var opt=document.createElement('option');
+      opt.value=curTime; opt.textContent=curTime;
+      sel.insertBefore(opt, sel.firstChild);
+      sel.selectedIndex=0;
+    }
+  }
+
+  list.appendChild(card);
 }
 
+function tgTaskTypeLbl(radio){
+  var card=radio.closest('.taskCard');
+  if(!card) return;
+  card.querySelectorAll('.taskTypeBtn').forEach(function(btn){
+    btn.classList.remove('selRec','selUniq');
+  });
+  var selBtn=radio.closest('.taskTypeBtn');
+  if(selBtn) selBtn.classList.add(radio.value==='unique'?'selUniq':'selRec');
+}
+
+function tgComLbl(chk){
+  var lbl=chk.closest('.taskCommentToggle');
+  if(lbl) lbl.classList.toggle('selCom', chk.checked);
+}
+
+function tgAllEmpCard(cb){
+  var card=cb.closest('.taskCard');
+  if(!card) return;
+  var chips=card.querySelectorAll('.taskEmpRow .taskEmpChip');
+  chips.forEach(function(chip){ chip.classList.remove('selEmp'); });
+  if(cb.checked){
+    card.querySelectorAll('.tepOptions input[type=checkbox], .taskEmpRow input').forEach(function(c){ c.checked=false; });
+    cb.checked=true;
+    cb.closest('.taskEmpChip').classList.add('selEmp');
+    card.querySelectorAll('.taskEmpRow input[value!="all"]').forEach(function(c){ c.checked=false; });
+    card.querySelectorAll('.taskEmpRow label').forEach(function(l){ l.classList.remove('selEmp'); });
+    cb.closest('.taskEmpChip').classList.add('selEmp');
+  }
+}
+
+function tgOneEmpCard(cb){
+  var card=cb.closest('.taskCard');
+  if(!card) return;
+  var allCb=card.querySelector('.taskEmpRow input[value="all"]');
+  if(allCb){ allCb.checked=false; allCb.closest('.taskEmpChip').classList.remove('selEmp'); }
+  cb.closest('.taskEmpChip').classList.toggle('selEmp', cb.checked);
+}
 function addTaskRow(){
   addTaskRowWithData(null);
 }
@@ -1433,23 +1507,23 @@ function doSaveTasks(){
   var rows=G("taskList").querySelectorAll(".taskRow");
   var newT=[], id=1;
   rows.forEach(function(row){
-    var ins=row.querySelectorAll("input[type=text]");
-    var lbl=ins[0]?ins[0].value.trim():"";
-    var time=ins[1]?ins[1].value.trim():"";
+    var lblInput=row.querySelector('.taskLabelInput, input[type=text]');
+    var lbl=lblInput?lblInput.value.trim():'';
     if(!lbl) return;
-    // collect assigned employees
+    var timeSel=row.querySelector('.taskTimeSelect');
+    var timeInp=row.querySelectorAll('input[type=text]')[1];
+    var time=timeSel?timeSel.value:(timeInp?timeInp.value.trim():'');
     var assigned=[];
-    row.querySelectorAll('.tepOptions input[type=checkbox]').forEach(function(c){
-      if(c.value!=="all"&&c.checked) assigned.push(parseInt(c.value));
+    row.querySelectorAll('.taskEmpRow input[type=checkbox], .tepOptions input[type=checkbox]').forEach(function(c){
+      if(c.value!=='all'&&c.checked) assigned.push(parseInt(c.value));
     });
-    // if "all" checked or none selected, assignedTo = []
-    var allCb=row.querySelector('input[value="all"]');
+    var allCb=row.querySelector('.taskEmpRow input[value="all"], input[value="all"]');
     if(allCb&&allCb.checked) assigned=[];
     var typeR=row.querySelector('input[type=radio]:checked');
     var taskType=typeR?typeR.value:'recurring';
     var reqChk=row.querySelector('.reqComChk');
     var requireComment=reqChk?reqChk.checked:false;
-    newT.push({id:id++, label:lbl, note:"", time:time||"Sin hora", assignedTo:assigned, taskType:taskType, requireComment:requireComment});
+    newT.push({id:id++, label:lbl, note:'', time:time||'Sin hora', assignedTo:assigned, taskType:taskType, requireComment:requireComment});
   });
   tasks=newT;
   LS.set(K_TASKS,tasks); fbSyncTasks();
@@ -3499,6 +3573,7 @@ function renderDailyReport(){
   html+='</div>';
   panel.innerHTML=html;
 }
+
 
 
 </script>
