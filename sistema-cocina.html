@@ -585,8 +585,8 @@ input[type=file]{display:none;}
 /* ── TASK MODAL V2 ── */
 .taskCard{ background:var(--bg3); border:1px solid var(--bo); border-radius:var(--r); padding:14px; margin-bottom:10px; position:relative; }
 .taskCardNum{ position:absolute; top:10px; right:36px; font-size:10px; font-weight:700; color:var(--tx3); background:var(--bg2); padding:2px 8px; border-radius:10px; }
-.taskCardTop{ display:flex; align-items:center; gap:8px; margin-bottom:10px; min-width:0; }
-.taskLabelInput{ flex:1; min-width:0; background:var(--bg2); border:1px solid var(--bo2); border-radius:var(--rs); color:var(--tx); font-family:inherit; font-size:13px; font-weight:500; padding:9px 12px; outline:none; height:44px; }
+.taskCardTop{ display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.taskLabelInput{ flex:1; min-width:120px; background:var(--bg2); border:1px solid var(--bo2); border-radius:var(--rs); color:var(--tx); font-family:inherit; font-size:13px; font-weight:500; padding:9px 12px; outline:none; height:44px; width:100%; }
 .taskLabelInput:focus{ border-color:var(--am); }
 .taskTimeSelect{ background:var(--bg2); border:1px solid var(--bo2); border-radius:var(--rs); color:var(--tx); font-family:inherit; font-size:13px; padding:8px 10px; outline:none; min-width:120px; cursor:pointer; }
 .taskTimeSelect:focus{ border-color:var(--am); }
@@ -609,6 +609,9 @@ input[type=file]{display:none;}
 </style>
 </head>
 <body>
+
+
+
 
 
 
@@ -683,7 +686,9 @@ input[type=file]{display:none;}
       <button class="appTab" data-tab="tREC"><span class="tabIco">&#128203;</span><span class="tabLbl">Recetas</span></button>
       <button class="appTab" id="tabAdm" data-tab="tADM" style="display:none"><span class="tabIco">&#9881;</span><span class="tabLbl">Admin</span></button>
       <button class="appTab" id="tabSup" data-tab="tSUP" style="display:none"><span class="tabIco">&#128100;</span><span class="tabLbl">Suplidores</span></button>
-    <button class="tab appTab" id="tREP" onclick="switchTab('tREP')"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
+      <button class="tab appTab" id="tREP" onclick="switchTab('tREP')"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
+      
+    
     </div>
   </div>
   <!-- Mobile bottom nav -->
@@ -696,7 +701,7 @@ input[type=file]{display:none;}
       <button class="appTab" id="tabAdmMob" data-tab="tADM" style="display:none"><span class="tabIco">&#9881;</span><span class="tabLbl">Admin</span></button>
       <button class="appTab" id="tabSupMob" data-tab="tSUP" style="display:none"><span class="tabIco">&#128100;</span><span class="tabLbl">Suplidores</span></button>
       <button class="appTab" id="tabRepMob" data-tab="tREP" style="display:none"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
-    <button class="tab appTab" id="tREP" onclick="switchTab('tREP')"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
+    
     </div>
   </div>
   <div class="appContent">
@@ -734,7 +739,7 @@ input[type=file]{display:none;}
     </div>
     <div class="tab" id="tADM"><div id="admView"></div></div>
     <div class="tab" id="tSUP"><div id="supView"></div></div>
-    <div class="tab" id="tREP"><div id="repView"></div></div>
+    <div class="tab" id="pREP"><div id="repView"></div></div>
   </div>
 </div>
 
@@ -948,10 +953,16 @@ input[type=file]{display:none;}
 
 
 
+
+
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
+
+
 
 
 
@@ -967,20 +978,23 @@ function expandComment(tid, forceOpen){
 }
 
 function saveComment(tid){
-  tid=parseInt(tid)||tid;
+  tid=parseInt(tid)||String(tid);
   var ta=G('tca_'+tid); if(!ta) return;
   var val=ta.value.trim();
   var data=getCL(cur.id);
   if(!data.comments) data.comments={};
+  if(!data.cl) data.cl={};
+  if(!data.ts) data.ts={};
   var myTasks=tasksForEmp(cur.id);
-  var task=myTasks.find(function(t){return t.id===tid;});
-  if(!data.cl[tid]&&task&&task.requireComment&&!val){
+  var task=myTasks.find(function(t){return String(t.id)===String(tid);});
+  var isDone=data.cl[String(tid)]||data.cl[tid];
+  if(!isDone&&task&&task.requireComment&&!val){
     ta.style.borderColor='var(--rd)';
     ta.placeholder='Justificación obligatoria...';
     return;
   }
   ta.style.borderColor='';
-  data.comments[tid]=val;
+  data.comments[String(tid)]=val;
   setCL(cur.id,data);
   var box=G('tcm_'+tid); if(box) box.classList.remove('open');
 }
@@ -994,7 +1008,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "3.7.0";
+var APP_VERSION = "3.8.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -1166,11 +1180,17 @@ function tasksForEmp(empId){
 }
 
 function switchTab(id){
+  // Hide all tab panes
   document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("on"); });
+  // Deactivate all nav buttons
   document.querySelectorAll(".appTab").forEach(function(t){ t.classList.remove("on"); });
-  var t=G(id); if(t) t.classList.add("on");
-  document.querySelectorAll(".appTab").forEach(function(t){ if(t.dataset.tab===id) t.classList.add("on"); });
-  // sync bottom nav badge
+  // Activate the correct pane
+  var paneId = id==="tREP"?"pREP":id;
+  var pane=G(paneId); if(pane) pane.classList.add("on");
+  // Activate matching nav button
+  document.querySelectorAll(".appTab").forEach(function(t){
+    if(t.dataset.tab===id||t.id===id) t.classList.add("on");
+  });
   syncBadgeMob();
   if(id==="tCL")   renderCL();
   if(id==="tINV")  renderInv();
@@ -3580,6 +3600,9 @@ function renderDailyReport(){
   html+='</div>';
   panel.innerHTML=html;
 }
+
+
+
 
 
 
