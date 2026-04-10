@@ -631,6 +631,7 @@ input[type=file]{display:none;}
 
 
 
+
 <div id="sLogin" class="scr on">
   <div class="lcard">
     <div class="lLogos">
@@ -686,7 +687,7 @@ input[type=file]{display:none;}
       <button class="appTab" data-tab="tREC"><span class="tabIco">&#128203;</span><span class="tabLbl">Recetas</span></button>
       <button class="appTab" id="tabAdm" data-tab="tADM" style="display:none"><span class="tabIco">&#9881;</span><span class="tabLbl">Admin</span></button>
       <button class="appTab" id="tabSup" data-tab="tSUP" style="display:none"><span class="tabIco">&#128100;</span><span class="tabLbl">Suplidores</span></button>
-      <button class="tab appTab" id="tREP" onclick="switchTab('tREP')"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
+      <button class="appTab" id="tabRep" data-tab="tREP" style="display:none"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
       
     
     </div>
@@ -956,10 +957,12 @@ input[type=file]{display:none;}
 
 
 
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
 
 
 
@@ -1008,7 +1011,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "3.8.0";
+var APP_VERSION = "3.9.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -1264,6 +1267,7 @@ function startApp(){
     if(G("tabAdmMob")) G("tabAdmMob").style.display="inline-flex";
     if(G("tabSupMob")) G("tabSupMob").style.display="inline-flex";
     if(G("tabRepMob")) G("tabRepMob").style.display="inline-flex";
+    if(G("tabRep")) G("tabRep").style.display="inline-flex";
     G("recAdmBtns").style.display="block";
     G("invAdmBtns").style.display="flex";
   } else {
@@ -1272,6 +1276,7 @@ function startApp(){
     if(G("tabAdmMob")) G("tabAdmMob").style.display="none";
     if(G("tabSupMob")) G("tabSupMob").style.display="none";
     if(G("tabRepMob")) G("tabRepMob").style.display="none";
+    if(G("tabRep")) G("tabRep").style.display="none";
     G("recAdmBtns").style.display="none";
     G("invAdmBtns").style.display="none";
   }
@@ -3544,6 +3549,138 @@ function renderDailyReport(){
     panel.innerHTML='<div class="noTaskMsg">Solo el due&ntilde;o puede ver el reporte.</div>';
     return;
   }
+
+  // Nav: Hoy (live) + history
+  var hist=getCLHist();
+  var navHtml='<div class="reportNavBtns">';
+  navHtml+='<button class="reportNavBtn'+(reportDateIdx===0?' on':'')+'" onclick="reportDateIdx=0;renderDailyReport()">&#128197; Hoy</button>';
+  for(var i=0;i<Math.min(7,hist.length);i++){
+    var lbl=i===0?'Ayer':(hist[i]?hist[i].date:'');
+    navHtml+='<button class="reportNavBtn'+(reportDateIdx===(i+1)?' on':'')+'" onclick="reportDateIdx='+(i+1)+';renderDailyReport()">'+(hist[i]?hist[i].date:'Ayer')+'</button>';
+  }
+  navHtml+='</div>';
+
+  var html=navHtml+'<div class="reportWrap">';
+
+  if(reportDateIdx===0){
+    // LIVE: read current CL state
+    var today=getTodayDateStr();
+    html+='<div class="reportDate">&#128203; Hoy en vivo &mdash; '+today+'</div>';
+    html+='<div class="reportSub">Datos en tiempo real &middot; '+emps.length+' empleados</div>';
+
+    emps.forEach(function(emp){
+      var myTasks=tasksForEmp(emp.id);
+      var data=getCL(emp.id), cl=data.cl||{}, comments=data.comments||{};
+      var completed=myTasks.filter(function(t){ return cl[String(t.id)]||cl[t.id]; });
+      var missed=myTasks.filter(function(t){ return !(cl[String(t.id)]||cl[t.id]); });
+      var pct=myTasks.length>0?Math.round(completed.length/myTasks.length*100):0;
+      var pctCls=pct>=80?'reportPctGr':pct>=50?'reportPctAm':'reportPctRd';
+      var barClr=pct>=80?'var(--gr)':pct>=50?'var(--am)':'var(--rd)';
+
+      html+='<div class="reportEmp">';
+      html+='<div class="reportEmpHdr"><div class="reportEmpAv">'+emp.name.substring(0,2).toUpperCase()+'</div>';
+      html+='<div style="flex:1"><div class="reportEmpName">'+emp.name+'</div>';
+      html+='<div style="font-size:11px;color:var(--tx3)">'+emp.role+'</div></div>';
+      html+='<div class="reportPct '+pctCls+'">'+pct+'%</div></div>';
+      html+='<div class="reportProgBar"><div class="reportProgFill" style="width:'+pct+'%;background:'+barClr+'"></div></div>';
+
+      // Completed tasks
+      html+='<div class="reportSection">';
+      html+='<div class="reportSectionTitle">&#10003; Realizadas ('+completed.length+')</div>';
+      if(completed.length){
+        completed.forEach(function(t){
+          var ts=data.ts&&(data.ts[String(t.id)]||data.ts[t.id])||'';
+          var cm=comments[String(t.id)]||comments[t.id]||'';
+          html+='<div class="reportTask"><span class="reportTaskIco">&#9989;</span>';
+          html+='<div style="flex:1"><div class="reportTaskName">'+t.label+'</div>';
+          if(cm) html+='<div class="reportTaskComment">&#128172; '+cm+'</div>';
+          html+='</div><span class="reportTaskTime">'+ts+'</span></div>';
+        });
+      } else {
+        html+='<div class="reportNoTasks">Ninguna tarea completada aun.</div>';
+      }
+      html+='</div>';
+
+      // Missed tasks
+      if(missed.length){
+        html+='<div class="reportSection" style="border-top:1px solid var(--bo)">';
+        html+='<div class="reportSectionTitle">&#10005; Pendientes ('+missed.length+')</div>';
+        missed.forEach(function(t){
+          var cm=comments[String(t.id)]||comments[t.id]||'';
+          html+='<div class="reportTask"><span class="reportTaskIco">&#9744;</span>';
+          html+='<div style="flex:1"><div class="reportTaskName">'+t.label+'</div>';
+          if(cm) html+='<div class="reportTaskJustify">&#128221; '+cm+'</div>';
+          html+='</div></div>';
+        });
+        html+='</div>';
+      }
+      html+='</div>';
+    });
+
+  } else {
+    // HISTORY: read from archive
+    var entry=hist[reportDateIdx-1];
+    if(!entry){
+      html+='<p style="color:var(--tx3);padding:20px 0">No hay datos para esta fecha.</p>';
+    } else {
+      html+='<div class="reportDate">&#128203; '+entry.date+'</div>';
+      html+='<div class="reportSub">'+entry.employees.length+' empleados</div>';
+      entry.employees.forEach(function(emp){
+        var pct=emp.totalTasks>0?Math.round(emp.completedCount/emp.totalTasks*100):0;
+        var pctCls=pct>=80?'reportPctGr':pct>=50?'reportPctAm':'reportPctRd';
+        var barClr=pct>=80?'var(--gr)':pct>=50?'var(--am)':'var(--rd)';
+        html+='<div class="reportEmp">';
+        html+='<div class="reportEmpHdr"><div class="reportEmpAv">'+emp.name.substring(0,2).toUpperCase()+'</div>';
+        html+='<div style="flex:1"><div class="reportEmpName">'+emp.name+'</div><div style="font-size:11px;color:var(--tx3)">'+emp.role+'</div></div>';
+        html+='<div class="reportPct '+pctCls+'">'+pct+'%</div></div>';
+        html+='<div class="reportProgBar"><div class="reportProgFill" style="width:'+pct+'%;background:'+barClr+'"></div></div>';
+        html+='<div class="reportSection">';
+        html+='<div class="reportSectionTitle">&#10003; Realizadas ('+emp.completedCount+')</div>';
+        if(emp.completed&&emp.completed.length){
+          emp.completed.forEach(function(t){
+            html+='<div class="reportTask"><span class="reportTaskIco">&#9989;</span>';
+            html+='<div style="flex:1"><div class="reportTaskName">'+t.label+'</div>';
+            if(t.comment) html+='<div class="reportTaskComment">&#128172; '+t.comment+'</div>';
+            html+='</div><span class="reportTaskTime">'+t.time+'</span></div>';
+          });
+        } else { html+='<div class="reportNoTasks">Ninguna tarea completada.</div>'; }
+        html+='</div>';
+        if(emp.missed&&emp.missed.length){
+          html+='<div class="reportSection" style="border-top:1px solid var(--bo)">';
+          html+='<div class="reportSectionTitle">&#10005; No realizadas ('+emp.missed.length+')</div>';
+          emp.missed.forEach(function(t){
+            html+='<div class="reportTask"><span class="reportTaskIco">&#10060;</span>';
+            html+='<div style="flex:1"><div class="reportTaskName">'+t.label+'</div>';
+            if(t.justify) html+='<div class="reportTaskJustify">&#128221; '+t.justify+'</div>';
+            else html+='<div class="reportTaskJustify" style="color:var(--tx3);background:var(--bg3)">Sin justificaci\u00f3n</div>';
+            html+='</div></div>';
+          });
+          html+='</div>';
+        }
+        html+='</div>';
+      });
+    }
+  }
+
+  html+='</div>';
+  panel.innerHTML=html;
+}
+
+// Auto-refresh live report every 30s when visible
+setInterval(function(){
+  if(cur&&cur.isAdmin&&G('pREP')&&G('pREP').classList.contains('on')&&reportDateIdx===0){
+    renderDailyReport();
+  }
+},30000);
+
+var reportDateIdx=0;
+
+function renderDailyReport(){
+  var panel=G('repView'); if(!panel) return;
+  if(!cur||!cur.isAdmin){
+    panel.innerHTML='<div class="noTaskMsg">Solo el due&ntilde;o puede ver el reporte.</div>';
+    return;
+  }
   var hist=getCLHist();
   var navHtml='<div class="reportNavBtns">';
   var navLabels=['Hoy','Ayer'];
@@ -3600,6 +3737,7 @@ function renderDailyReport(){
   html+='</div>';
   panel.innerHTML=html;
 }
+
 
 
 
