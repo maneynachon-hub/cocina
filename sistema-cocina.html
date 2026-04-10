@@ -549,6 +549,7 @@ input[type=file]{display:none;}
 
 
 
+
 <div id="sLogin" class="scr on">
   <div class="lcard">
     <div class="lLogos">
@@ -604,6 +605,7 @@ input[type=file]{display:none;}
       <button class="appTab" data-tab="tREC"><span class="tabIco">&#128203;</span><span class="tabLbl">Recetas</span></button>
       <button class="appTab" id="tabAdm" data-tab="tADM" style="display:none"><span class="tabIco">&#9881;</span><span class="tabLbl">Admin</span></button>
       <button class="appTab" id="tabSup" data-tab="tSUP" style="display:none"><span class="tabIco">&#128100;</span><span class="tabLbl">Suplidores</span></button>
+    <button class="tab appTab" id="tREP" onclick="switchTab('tREP')"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
     </div>
   </div>
   <!-- Mobile bottom nav -->
@@ -615,6 +617,7 @@ input[type=file]{display:none;}
       <button class="appTab" data-tab="tREC"><span class="tabIco">&#128203;</span><span class="tabLbl">Recetas</span></button>
       <button class="appTab" id="tabAdmMob" data-tab="tADM" style="display:none"><span class="tabIco">&#9881;</span><span class="tabLbl">Admin</span></button>
       <button class="appTab" id="tabSupMob" data-tab="tSUP" style="display:none"><span class="tabIco">&#128100;</span><span class="tabLbl">Suplidores</span></button>
+    <button class="tab appTab" id="tREP" onclick="switchTab('tREP')"><span class="tabIco">&#128203;</span><span class="tabLbl">Reporte</span></button>
     </div>
   </div>
   <div class="appContent">
@@ -652,6 +655,7 @@ input[type=file]{display:none;}
     </div>
     <div class="tab" id="tADM"><div id="admView"></div></div>
     <div class="tab" id="tSUP"><div id="supView"></div></div>
+    <div class="tab" id="tREP"><div id="repView"></div></div>
   </div>
 </div>
 
@@ -860,10 +864,12 @@ input[type=file]{display:none;}
   </div>
 </div>
 
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
 
 var _supMap={};
 function showSup(id){ showSupHistory(id); }
@@ -3312,6 +3318,7 @@ function startGasListener(){
     if(data){ LS.set(GAS_KEY, data); renderGasWidget(); }
   });
 }
+
 
 </script>
 <script>
