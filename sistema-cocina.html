@@ -51,7 +51,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-
 .btnSec{width:100%;padding:10px;background:transparent;border:1px solid var(--bo2);border-radius:var(--rs);color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .2s;}
 .btnSec:hover{background:var(--bg3);color:var(--tx);}
 .errBox{background:var(--rd2);border:1px solid rgba(224,85,85,.3);border-radius:var(--rs);padding:9px 13px;color:var(--rd);font-size:12px;margin-top:10px;display:none;}
-#sApp.on{display:flex;flex-direction:column;min-height:100vh;}
+#sApp.on{display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden;}
 .topBar{background:var(--bg2);border-bottom:1px solid var(--bo);padding:0 14px;display:flex;align-items:center;height:50px;position:sticky;top:0;z-index:50;gap:8px;}
 .topLogos{display:flex;align-items:center;gap:5px;margin-right:8px;}
 .topLogo{width:26px;height:26px;border-radius:5px;object-fit:cover;}
@@ -66,7 +66,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);font-
 .btnLgt{background:transparent;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:4px 6px;border-radius:var(--rxs);font-family:'DM Sans',sans-serif;transition:color .2s;}
 .btnLgt:hover{color:var(--tx);}
 .appContent{flex:1;padding:20px 16px;max-width:960px;margin:0 auto;width:100%;}
-.tab{display:none;}.tab.on{display:block;}
+.tab{display:none;}.tab.on{display:block;padding-bottom:80px;}
 .pgHdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;}
 .pgHdr h2{font-size:18px;font-weight:600;letter-spacing:-.4px;}
 .pgHdr p{font-size:13px;color:var(--tx2);margin-top:2px;}
@@ -600,6 +600,7 @@ input[type=file]{display:none;}
 
 
 
+
 <div id="sLogin" class="scr on">
   <div class="lcard">
     <div class="lLogos">
@@ -917,10 +918,12 @@ input[type=file]{display:none;}
 
 
 
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
+
 
 function expandComment(tid, forceOpen){
   tid=parseInt(tid)||tid;
@@ -960,7 +963,7 @@ function delSup(id){ deleteSup(id); }
 
 
 // ── AUTO-UPDATE CHECK ─────────────────────────────────────────────
-var APP_VERSION = "3.4.0";
+var APP_VERSION = "3.5.0";
 (function(){
   // Unregister any service workers that might cache old versions
   if('serviceWorker' in navigator){
@@ -1256,7 +1259,7 @@ function renderCL(){
       var tid_=String(t.id); var d=!!cl[tid_]||!!cl[t.id];
       var isUniq=t.taskType==='unique';
       var hasCom=t.requireComment||t.allowComment;
-      var existCom=comments_[t.id]||'';
+      var existCom=comments_[t.id]||comments_[String(t.id)]||'';
       var typeTag=isUniq?'<span class="tType tTypeUniq">&#11088; Unica</span>':'<span class="tType tTypeRec">&#128257; Diaria</span>';
       html+='<div class="tItem'+(d?' tItemDone':'')+'" id="ti_'+t.id+'">'
         +'<div class="tItemHeader" onclick="tgTask('+t.id+')">'
@@ -1442,7 +1445,11 @@ function doSaveTasks(){
     // if "all" checked or none selected, assignedTo = []
     var allCb=row.querySelector('input[value="all"]');
     if(allCb&&allCb.checked) assigned=[];
-    newT.push({id:id++, label:lbl, note:"", time:time||"Sin hora", assignedTo:assigned});
+    var typeR=row.querySelector('input[type=radio]:checked');
+    var taskType=typeR?typeR.value:'recurring';
+    var reqChk=row.querySelector('.reqComChk');
+    var requireComment=reqChk?reqChk.checked:false;
+    newT.push({id:id++, label:lbl, note:"", time:time||"Sin hora", assignedTo:assigned, taskType:taskType, requireComment:requireComment});
   });
   tasks=newT;
   LS.set(K_TASKS,tasks); fbSyncTasks();
@@ -3492,6 +3499,7 @@ function renderDailyReport(){
   html+='</div>';
   panel.innerHTML=html;
 }
+
 
 </script>
 <script>
